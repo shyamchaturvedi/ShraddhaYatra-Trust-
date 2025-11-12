@@ -19,6 +19,16 @@ const DetailItem: React.FC<{label: string; value: string; icon: React.ReactNode}
     </div>
 );
 
+const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+
 // Moved outside component for better performance and readability
 const icons: {[key:string]: React.ReactNode} = {
     calendar: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" /></svg>,
@@ -54,7 +64,7 @@ const TripDetailView: React.FC<TripDetailViewProps> = ({ trip, onBookNow }) => {
                     <p className="text-gray-700 mb-6">{trip.description}</p>
                     
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-6 text-gray-800">
-                        <DetailItem icon={icons.calendar} label="Date" value={new Date(trip.date).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })} />
+                        <DetailItem icon={icons.calendar} label="Date" value={formatDate(trip.date)} />
                         <DetailItem icon={icons.clock} label="Time" value={trip.time} />
                         <DetailItem icon={icons.train} label="Train No." value={trip.train_no} />
                         <DetailItem icon={icons.pin} label="From" value={trip.from_station} />

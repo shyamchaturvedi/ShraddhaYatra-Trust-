@@ -12,6 +12,16 @@ interface TripManagementTabProps {
     onSendNotification: (trip: Trip, message: string, newDate?: string) => void;
 }
 
+const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+
 const TripManagementTab: React.FC<TripManagementTabProps> = ({ trips, onAdminAction, onSendNotification }) => {
     const [isTripModalOpen, setIsTripModalOpen] = useState(false);
     const [tripToEdit, setTripToEdit] = useState<Trip | null>(null);
@@ -78,7 +88,7 @@ const TripManagementTab: React.FC<TripManagementTabProps> = ({ trips, onAdminAct
                             {trips.map(trip => (
                                 <tr key={trip.id} className="border-b border-gray-200">
                                 <td className="p-3">{trip.title}</td>
-                                <td className="p-3">{new Date(trip.date).toLocaleDateString()}</td>
+                                <td className="p-3">{formatDate(trip.date)}</td>
                                 <td className="p-3">{trip.status}</td>
                                 <td className="p-3 flex flex-wrap gap-2">
                                     <button onClick={() => handleEditTrip(trip)} className="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600">Edit</button>

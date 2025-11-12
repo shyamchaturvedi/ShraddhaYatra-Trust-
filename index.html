@@ -20,6 +20,46 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #f97316; /* orange-500 */
       }
+
+      /* Print styles */
+      @media print {
+        @page {
+          size: A4;
+          margin: 0;
+        }
+        html, body {
+          width: 210mm;
+          height: 297mm;
+          background: #fff;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        /* Hide everything by default when printing */
+        body.is-printing > * {
+          display: none !important;
+        }
+
+        /* Only show the element that is specifically marked for printing */
+        body.is-printing .print-this {
+          display: block !important;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: auto;
+          margin: 0;
+          padding: 20mm 15mm; /* Add some margin to the A4 page */
+          box-sizing: border-box;
+          box-shadow: none;
+          border: none;
+        }
+
+        /* Hide buttons within the printed card */
+        .print-this .print-hide {
+          display: none !important;
+        }
+      }
     </style>
   <script type="importmap">
 {

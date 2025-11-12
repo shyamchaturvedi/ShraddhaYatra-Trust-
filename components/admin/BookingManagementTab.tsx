@@ -16,6 +16,15 @@ const statusStyles: { [key in BookingStatus]: string } = {
   [BookingStatus.REJECTED]: 'text-red-600',
 };
 
+const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 
 const BookingManagementTab: React.FC<BookingManagementTabProps> = ({ bookings, trips, users, onAdminAction }) => {
 
@@ -48,7 +57,7 @@ const BookingManagementTab: React.FC<BookingManagementTabProps> = ({ bookings, t
                                 const user = users.find(u => u.id === booking.user_id);
                                 return (
                                     <tr key={booking.id} className="border-b border-gray-200">
-                                        <td className="p-3">{new Date(booking.created_at).toLocaleDateString()}</td>
+                                        <td className="p-3">{formatDate(booking.created_at)}</td>
                                         <td className="p-3">{trip?.title}</td>
                                         <td className="p-3">{user?.name} ({user?.phone})</td>
                                         <td className={`p-3 capitalize font-semibold ${statusStyles[booking.admin_status]}`}>{booking.admin_status}</td>

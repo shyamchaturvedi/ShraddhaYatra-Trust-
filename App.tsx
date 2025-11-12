@@ -332,7 +332,7 @@ const App: React.FC = () => {
             // Fix: Pass the `authError` state as the `loginError` prop.
             case 'register': return <RegisterView onRegister={handleRegister} setView={setView} loginError={authError} />;
             case 'tripDetail': return selectedTrip ? <TripDetailView trip={selectedTrip} onBookNow={handleAddBooking} /> : <p>Trip not found.</p>;
-            case 'bookings': return currentUser ? <BookingsView bookings={bookings} trips={trips} currentUser={currentUser} /> : <p>Please log in.</p>;
+            case 'bookings': return currentUser ? <BookingsView bookings={bookings} trips={trips} currentUser={currentUser} logoUrl={siteLogoUrl} /> : <p>Please log in.</p>;
             case 'admin':
                 return currentUser?.role === Role.ADMIN ? <AdminDashboard trips={trips} bookings={bookings} users={allUsers} donations={donations} galleryImages={galleryImages} testimonials={testimonials} aboutContent={config.about_content} contactContent={config.contact_content} upiId={config.upi_id} siteLogoUrl={siteLogoUrl} onAdminAction={handleAdminAction} onSendNotification={handleSendNotification} /> : <p>Access Denied.</p>;
             case 'profile': return currentUser ? <ProfileView user={currentUser} onUpdateUser={handleUpdateUser} onChangePassword={handleChangePassword} /> : <p>Please log in.</p>;

@@ -12,6 +12,15 @@ const statusStyles: { [key in TripStatus]: string } = {
   [TripStatus.CANCELLED]: 'bg-red-100 text-red-800',
 };
 
+const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 
 const TripCard: React.FC<TripCardProps> = ({ trip, onViewDetails }) => {
   const isActionable = trip.status === TripStatus.UPCOMING;
@@ -35,7 +44,7 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onViewDetails }) => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
             </svg>
-            <span>{new Date(trip.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span>{formatDate(trip.date)}</span>
           </div>
           <div className="font-semibold text-xl text-orange-600">
             ₹{trip.ticket_price}

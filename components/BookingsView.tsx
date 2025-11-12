@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Booking, Trip, User, BookingStatus } from '../types';
 import BookingDetailsCard from './BookingDetailsCard';
@@ -7,6 +8,7 @@ interface BookingsViewProps {
   bookings: Booking[];
   trips: Trip[];
   currentUser: User;
+  logoUrl: string;
 }
 
 const statusStyles: { [key in BookingStatus]: string } = {
@@ -15,12 +17,22 @@ const statusStyles: { [key in BookingStatus]: string } = {
   [BookingStatus.REJECTED]: 'bg-red-100 text-red-800',
 };
 
+const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+
 const StatusInfoCard: React.FC<{ booking: Booking; trip: Trip }> = ({ booking, trip }) => (
     <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-400">
         <div className="flex justify-between items-start">
             <div>
                 <h3 className="text-xl font-bold text-amber-900">{trip.title}</h3>
-                <p className="text-sm text-gray-600">Requested on: {new Date(booking.created_at).toLocaleDateString()}</p>
+                <p className="text-sm text-gray-600">Requested on: {formatDate(booking.created_at)}</p>
             </div>
             <span className={`px-3 py-1 text-sm font-semibold rounded-full ${statusStyles[booking.admin_status]}`}>
                 {booking.admin_status}
@@ -36,7 +48,7 @@ const StatusInfoCard: React.FC<{ booking: Booking; trip: Trip }> = ({ booking, t
 );
 
 
-const BookingsView: React.FC<BookingsViewProps> = ({ bookings, trips, currentUser }) => {
+const BookingsView: React.FC<BookingsViewProps> = ({ bookings, trips, currentUser, logoUrl }) => {
     const myBookings = bookings
       .filter(b => b.user_id === currentUser.id)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -54,7 +66,7 @@ const BookingsView: React.FC<BookingsViewProps> = ({ bookings, trips, currentUse
                     approvedBookings.map(booking => {
                         const trip = trips.find(t => t.id === booking.trip_id);
                         if (!trip) return null;
-                        return <BookingDetailsCard key={booking.id} booking={booking} trip={trip} user={currentUser} />;
+                        return <BookingDetailsCard key={booking.id} booking={booking} trip={trip} user={currentUser} logoUrl={logoUrl} />;
                     })
                 ) : (
                     <p className="text-center text-gray-600">You have no approved bookings yet.</p>
