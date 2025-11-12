@@ -60,43 +60,62 @@ const BookingDetailsCard: React.FC<BookingDetailsCardProps> = ({ booking, trip, 
   const whatsappLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`;
 
   return (
-    <div ref={cardRef} className="bg-white rounded-lg shadow-2xl max-w-2xl mx-auto my-8 p-6 md:p-8 border-4 border-amber-400 printable-card">
-      <div className="text-center mb-6 border-b-2 border-dashed border-amber-300 pb-4">
-        <img src={logoUrl} alt="ShraddhaYatra Trust Logo" className="mx-auto h-24 w-auto mb-4" />
-        <h2 className="text-3xl font-bold text-orange-800">ShraddhaYatra Trust</h2>
-        <p className="text-orange-600">Yatra Booking Confirmation</p>
+    <div ref={cardRef} className="bg-white rounded-lg shadow-2xl max-w-2xl mx-auto my-8 p-6 md:p-8 border border-gray-200">
+      <div className="text-center mb-6 border-b border-dashed border-gray-300 pb-4">
+        <img src={logoUrl} alt="ShraddhaYatra Trust Logo" className="mx-auto h-20 w-auto mb-3" />
+        <h2 className="text-3xl font-bold text-gray-800">ShraddhaYatra Trust</h2>
+        <p className="text-gray-500">Yatra Booking Confirmation</p>
       </div>
       
-      <div className="grid md:grid-cols-3 gap-6 mb-6">
-        <div className="md:col-span-2">
-          <h3 className="text-2xl font-bold text-orange-900 mb-2">{trip.title}</h3>
-          <p className="text-gray-700 font-medium">Passenger: <span className="font-bold">{user.name}</span></p>
-          <p className="text-gray-700 font-medium">Seats: <span className="font-bold">{booking.seat_count}</span></p>
-          <p className="text-gray-700 font-medium">Booking ID: <span className="font-bold">{formattedBookingId}</span></p>
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">{trip.title}</h3>
+          <div className="space-y-1 text-gray-600">
+            <p>Passenger: <span className="font-semibold text-gray-800">{user.name}</span></p>
+            <p>Seats: <span className="font-semibold text-gray-800">{booking.seat_count}</span></p>
+            <p>Booking ID: <span className="font-semibold text-gray-800">{formattedBookingId}</span></p>
+          </div>
         </div>
-        <div className="flex items-center justify-center">
+        <div className="flex-shrink-0">
             <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=BookingID:${formattedBookingId}-TripID:${trip.id}`} alt="QR Code" />
         </div>
       </div>
 
-      <div className="space-y-4 text-gray-800">
-        <div className="grid grid-cols-2 gap-4 bg-amber-50 p-3 rounded-md">
-          <div><strong>From:</strong><br/>{trip.from_station}</div>
-          <div><strong>To:</strong><br/>{trip.to_station}</div>
+      <div className="bg-gray-100 p-4 rounded-lg mb-6 flex justify-between items-center">
+        <div>
+          <p className="text-sm text-gray-500">From</p>
+          <p className="font-semibold text-gray-800 text-lg">{trip.from_station}</p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div><strong>Date:</strong><br/>{formattedDate}</div>
-          <div><strong>Time:</strong><br/>{trip.time}</div>
-          <div><strong>Train No:</strong><br/>{trip.train_no}</div>
-          <div><strong>Platform:</strong><br/>{trip.platform}</div>
+        <div className="text-right">
+          <p className="text-sm text-gray-500">To</p>
+          <p className="font-semibold text-gray-800 text-lg">{trip.to_station}</p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-2 mb-4">
+        <div>
+          <p className="text-sm text-gray-500">Date</p>
+          <p className="font-semibold text-gray-800">{formattedDate}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">Time</p>
+          <p className="font-semibold text-gray-800">{trip.time}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">Train No:</p>
+          <p className="font-semibold text-gray-800">{trip.train_no}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">Platform:</p>
+          <p className="font-semibold text-gray-800">{trip.platform}</p>
         </div>
       </div>
       
       <div className="print-grow" />
 
-      <div className="mt-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-md">
-        <p className="font-bold">Important Note:</p>
-        <p>Please reach the station at least 10 minutes early to avoid any last-minute hassle.</p>
+      <div className="mt-6 p-4 bg-gray-100 rounded-lg">
+        <p className="font-bold text-gray-800">Important Note:</p>
+        <p className="text-gray-600">Please reach the station at least 10 minutes early to avoid any last-minute hassle.</p>
       </div>
       
       <div className="mt-8 flex flex-col md:flex-row gap-4 justify-center print-hide">

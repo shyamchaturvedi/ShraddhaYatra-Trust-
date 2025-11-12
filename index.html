@@ -37,43 +37,36 @@
         }
 
         /* --- JS-Triggered Printing Logic --- */
-        /* When the print button is clicked, the body gets the 'is-printing' class. */
-        
-        /* 1. Hide EVERYTHING on the page using visibility. */
-        /* This prevents the "parent is hidden, so child is hidden" problem. */
         body.is-printing * {
           visibility: hidden;
         }
         
-        /* 2. Make ONLY the target element and its children visible again. */
         body.is-printing .print-this, 
         body.is-printing .print-this * {
           visibility: visible;
         }
         
-        /* 3. Style the target element to fill the entire A4 page. */
         body.is-printing .print-this {
-          display: flex !important;
-          flex-direction: column;
-          position: absolute;
+          position: fixed; /* Use fixed for better cross-device compatibility */
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
           margin: 0;
-          padding: 1cm; /* Add a nice margin around the content */
+          padding: 1.5cm;
           box-sizing: border-box;
           box-shadow: none !important;
           border: none !important;
-          font-size: 11pt; /* A comfortable reading size for print */
+          font-size: 11pt;
+          
+          display: flex !important;
+          flex-direction: column;
         }
         
-        /* Helper to push content to the bottom of the page */
         .print-this .print-grow {
           flex-grow: 1;
         }
 
-        /* Helper to hide buttons, etc., from the printed version */
         .print-this .print-hide {
           display: none !important;
         }
