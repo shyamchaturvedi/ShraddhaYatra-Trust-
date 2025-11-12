@@ -28,48 +28,50 @@
           margin: 0;
         }
 
-        /* When JS triggers printing... */
         body.is-printing {
           background: white !important;
         }
         
-        /* Hide the main app header, footer, and toast notifications */
+        /* Hide header, footer, and toasts */
         body.is-printing #root > div > header,
         body.is-printing #root > div > footer,
-        body.is-printing #root > div > div[class*="fixed"] /* Generic selector for toasts */ {
+        body.is-printing #root > div > div[class*="fixed"] {
             display: none !important;
         }
 
-        /* Within the main content area, hide everything by default */
-        body.is-printing main > * {
-          visibility: hidden;
+        /* Hide everything inside the main content area by default */
+        body.is-printing main * {
+          visibility: hidden !important;
         }
 
         /* Then, make ONLY the printable element and its children visible again */
         body.is-printing .print-this,
         body.is-printing .print-this * {
-          visibility: visible;
+          visibility: visible !important;
         }
         
         /* Position the printable element to take over the entire page */
         body.is-printing .print-this {
-          position: absolute;
+          position: fixed; /* Use fixed positioning for better control */
           left: 0;
           top: 0;
           width: 100%;
-          height: 100%;
+          height: 100vh; /* Use viewport height to ensure it fits one page */
           margin: 0 !important;
           padding: 1.5cm !important;
           box-sizing: border-box !important;
           box-shadow: none !important;
           border: none !important;
           font-size: 12pt !important;
+          
+          /* Ensure its own display properties are set correctly for its children */
           display: flex !important;
           flex-direction: column !important;
         }
         
         /* Re-hide the buttons and other non-printable elements WITHIN the ticket */
         body.is-printing .print-this .print-hide {
+          /* Use display: none here to completely remove it from layout */
           display: none !important;
         }
         
