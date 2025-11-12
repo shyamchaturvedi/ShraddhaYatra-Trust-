@@ -1,0 +1,22 @@
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Could not find root element to mount to");
+}
+
+// Ensure the root is created only once, but allow re-rendering for HMR.
+// This is a more robust approach than simply skipping the block on subsequent runs.
+let root = (rootElement as any)._reactRootContainer;
+if (!root) {
+  root = ReactDOM.createRoot(rootElement);
+  (rootElement as any)._reactRootContainer = root;
+}
+
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
