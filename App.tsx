@@ -57,13 +57,59 @@ const App: React.FC = () => {
 
             let currentProfile: User | null = null;
             if (sessionData.session?.user) {
-                const { data: profile } = await supabase.from('profiles').select('*').eq('id', sessionData.session.user.id).single();
+                const userAuth = sessionData.session.user;
+                const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', userAuth.id)
+                    .single();
+
                 if (profile) {
+                    // Profile exists, normal flow
                     currentProfile = profile;
                     setCurrentUser(profile);
                     setIsAuthenticated(true);
+                } else if (profileError && profileError.code === 'PGRST116') { 
+                    // PGRST116: "The result contains 0 rows"
+                    // Profile does NOT exist, but user is authenticated. This is the inconsistent state.
+                    // Let's create the profile to self-heal the account.
+                    console.warn('User exists in auth but not in profiles. Creating profile to self-heal.');
+                    
+                    const newProfileData = {
+                        id: userAuth.id,
+                        name: userAuth.user_metadata?.name || 'New User',
+                        phone: userAuth.phone ? userAuth.phone.replace('+91', '') : '',
+                        role: Role.MEMBER
+                    };
+
+                    const { data: insertedProfile, error: insertError } = await supabase
+                        .from('profiles')
+                        .insert(newProfileData)
+                        .select()
+                        .single();
+
+                    if (insertError) {
+                        // If even this fails, something is very wrong. Log out the user.
+                        addToast(`Could not fix your account. Please contact support. Error: ${insertError.message}`, 'error');
+                        await supabase.auth.signOut();
+                        setCurrentUser(null);
+                        setIsAuthenticated(false);
+                    } else if (insertedProfile) {
+                        // Profile created successfully!
+                        addToast('Account recovered and login successful!', 'success');
+                        currentProfile = insertedProfile;
+                        setCurrentUser(insertedProfile);
+                        setIsAuthenticated(true);
+                    }
+                } else {
+                    // Some other profile error occurred
+                    if (profileError) console.error("Error fetching profile:", profileError);
+                    // Fallback to logged out state
+                    setCurrentUser(null);
+                    setIsAuthenticated(false);
                 }
             } else {
+                 // No session, user is logged out.
                  setCurrentUser(null);
                  setIsAuthenticated(false);
             }
@@ -156,6 +202,23 @@ const App: React.FC = () => {
         }
         
         if (data.user) {
+            // After successful signup, create a corresponding user profile.
+            const { error: profileError } = await supabase.from('profiles').insert({
+                id: data.user.id,
+                name,
+                phone,
+                role: Role.MEMBER,
+            });
+
+            if (profileError) {
+                // This is a critical error. The user exists in auth but has no profile.
+                // Inform the user and log them out to prevent an inconsistent state.
+                addToast(`Registration failed during profile creation: ${profileError.message}`, 'error');
+                setAuthError(profileError.message);
+                await supabase.auth.signOut();
+                return false;
+            }
+
             addToast("Registration successful! You are now logged in.", 'success');
             setView('home'); 
             return true;
