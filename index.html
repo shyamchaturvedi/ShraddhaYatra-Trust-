@@ -29,8 +29,6 @@
         }
 
         html, body {
-          width: 210mm;
-          height: 297mm;
           background: #fff !important;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
@@ -39,6 +37,7 @@
         /* --- JS-Triggered Printing Logic --- */
         body.is-printing * {
           visibility: hidden;
+          box-shadow: none !important;
         }
         
         body.is-printing .print-this, 
@@ -55,8 +54,6 @@
           margin: 0;
           padding: 1.5cm;
           box-sizing: border-box;
-          box-shadow: none !important;
-          border: none !important;
           font-size: 11pt;
           
           display: flex !important;

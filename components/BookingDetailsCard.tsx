@@ -77,7 +77,7 @@ const BookingDetailsCard: React.FC<BookingDetailsCardProps> = ({ booking, trip, 
           </div>
         </div>
         <div className="flex-shrink-0">
-            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=BookingID:${formattedBookingId}-TripID:${trip.id}`} alt="QR Code" />
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&qzone=1&data=BookingID:${formattedBookingId}-TripID:${trip.id}`} alt="QR Code" />
         </div>
       </div>
 
