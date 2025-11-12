@@ -30,7 +30,7 @@
         html, body {
           width: 210mm;
           height: 297mm;
-          background: #fff;
+          background: #fff !important;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
@@ -41,18 +41,25 @@
         }
 
         /* Only show the element that is specifically marked for printing */
+        /* This rule makes the card fill the entire page as a flex container */
         body.is-printing .print-this {
-          display: block !important;
+          display: flex !important;
+          flex-direction: column;
           position: absolute;
           top: 0;
           left: 0;
           width: 100%;
-          height: auto;
+          height: 100%;
           margin: 0;
-          padding: 20mm 15mm; /* Add some margin to the A4 page */
           box-sizing: border-box;
-          box-shadow: none;
-          border: none;
+          box-shadow: none !important;
+          border: none !important;
+          background: #fff !important;
+        }
+        
+        /* This helper class will make an element grow to fill available space */
+        .print-this .print-grow {
+          flex-grow: 1;
         }
 
         /* Hide buttons within the printed card */
