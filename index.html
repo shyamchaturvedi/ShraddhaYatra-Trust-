@@ -35,35 +35,43 @@
         }
 
         /* --- JS-Triggered Printing Logic --- */
+        
+        /* When printing is activated, hide EVERYTHING by default */
         body.is-printing * {
-          visibility: hidden;
+          visibility: hidden !important;
           box-shadow: none !important;
         }
         
+        /* Then, make ONLY the printable component and its children visible */
         body.is-printing .print-this, 
         body.is-printing .print-this * {
-          visibility: visible;
+          visibility: visible !important;
         }
         
+        /* Style the printable component to fill the entire page for a clean output */
         body.is-printing .print-this {
-          position: fixed; /* Use fixed for better cross-device compatibility */
+          position: absolute !important;
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
-          margin: 0;
-          padding: 1.5cm;
-          box-sizing: border-box;
-          font-size: 11pt;
-          
+          margin: 0 !important;
+          padding: 1.5cm !important;
+          box-sizing: border-box !important;
+          font-size: 11pt !important;
           display: flex !important;
           flex-direction: column;
+          /* Ensure clean card appearance */
+          background: #fff !important;
+          border: none !important;
         }
         
+        /* Allows content within the card to space out correctly */
         .print-this .print-grow {
           flex-grow: 1;
         }
 
+        /* Hide elements inside the card that are not for printing (e.g., buttons) */
         .print-this .print-hide {
           display: none !important;
         }
