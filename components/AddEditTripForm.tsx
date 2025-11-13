@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { Trip, TripStatus } from '../types';
-import { uploadImage } from '../services/supabaseClient';
+import { Trip, TripStatus, User } from '../types';
 import Spinner from './Spinner';
+import { uploadImage } from '../services/supabaseClient';
 
 
 interface AddEditTripFormProps {
   trip: Trip | null;
+  currentUser: User;
   onSave: (tripData: Omit<Trip, 'id'> | Trip) => void;
   onClose: () => void;
 }
 
-const AddEditTripForm: React.FC<AddEditTripFormProps> = ({ trip, onSave, onClose }) => {
+const AddEditTripForm: React.FC<AddEditTripFormProps> = ({ trip, currentUser, onSave, onClose }) => {
   const [formData, setFormData] = useState({
     title: trip?.title || '',
     description: trip?.description || '',
@@ -24,12 +25,12 @@ const AddEditTripForm: React.FC<AddEditTripFormProps> = ({ trip, onSave, onClose
     food_price: trip?.food_price || 0,
     food_option: trip?.food_option || false,
     notes: trip?.notes || '',
-    image_url: trip?.image_url || 'https://picsum.photos/seed/newtrip/800/600',
+    image_url: trip?.image_url || '/images/trips/default.jpg',
     status: trip?.status || TripStatus.UPCOMING,
   });
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(trip?.image_url || null);
-  const [isUploading, setIsUploading] = useState(false);
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,6 +40,7 @@ const AddEditTripForm: React.FC<AddEditTripFormProps> = ({ trip, onSave, onClose
       setImagePreview(URL.createObjectURL(file));
     }
   };
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -55,16 +57,14 @@ const AddEditTripForm: React.FC<AddEditTripFormProps> = ({ trip, onSave, onClose
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsUploading(true);
+    setIsLoading(true);
 
     let finalImageUrl = formData.image_url;
-
     if (selectedFile) {
-        const { data, error } = await uploadImage(selectedFile);
+        const { data, error } = await uploadImage(selectedFile, currentUser.id);
         if (error) {
             alert('Image upload failed. Please try again.');
-            console.error('Upload failed:', error);
-            setIsUploading(false);
+            setIsLoading(false);
             return;
         }
         finalImageUrl = data.publicUrl;
@@ -77,7 +77,7 @@ const AddEditTripForm: React.FC<AddEditTripFormProps> = ({ trip, onSave, onClose
     } else {
       onSave(tripDataToSave);
     }
-    setIsUploading(false);
+    setIsLoading(false);
   };
 
   return (
@@ -85,14 +85,6 @@ const AddEditTripForm: React.FC<AddEditTripFormProps> = ({ trip, onSave, onClose
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-amber-900 mb-4">{trip ? 'Edit Trip' : 'Add New Trip'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Trip Image</label>
-              <div className="mt-1 flex items-center gap-4">
-                {imagePreview && <img src={imagePreview} alt="Trip preview" className="w-32 h-20 object-cover rounded-md" />}
-                <input type="file" onChange={handleFileChange} accept="image/*" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/>
-              </div>
-            </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Title</label>
@@ -147,14 +139,21 @@ const AddEditTripForm: React.FC<AddEditTripFormProps> = ({ trip, onSave, onClose
               <label className="block text-sm font-medium text-gray-700">Notes</label>
               <textarea name="notes" value={formData.notes} onChange={handleChange} rows={2} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"></textarea>
             </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700">Trip Image</label>
+                <div className="mt-1 flex items-center gap-4">
+                    {imagePreview && <img src={imagePreview} alt="Trip preview" className="w-32 h-20 object-cover rounded" />}
+                    <input type="file" onChange={handleFileChange} accept="image/*" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/>
+                </div>
+            </div>
              <div className="flex items-center">
                 <input type="checkbox" name="food_option" checked={formData.food_option} onChange={handleChange} className="h-4 w-4 text-orange-600 border-gray-300 rounded" />
                 <label className="ml-2 block text-sm text-gray-900">Food Option Available</label>
             </div>
           <div className="flex justify-end items-center gap-4 mt-6">
-            {isUploading && <Spinner />}
-            <button type="button" onClick={onClose} disabled={isUploading} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 disabled:opacity-50">Cancel</button>
-            <button type="submit" disabled={isUploading} className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50">{trip ? 'Save Changes' : 'Add Trip'}</button>
+            {isLoading && <Spinner />}
+            <button type="button" onClick={onClose} disabled={isLoading} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 disabled:opacity-50">Cancel</button>
+            <button type="submit" disabled={isLoading} className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50">{trip ? 'Save Changes' : 'Add Trip'}</button>
           </div>
         </form>
       </div>

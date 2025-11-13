@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GalleryImage, Trip, TripStatus } from '../../types';
+import { GalleryImage, Trip, TripStatus, User } from '../../types';
 import Spinner from '../Spinner';
 import { uploadImage, supabase } from '../../services/supabaseClient';
 
@@ -7,11 +7,12 @@ import { uploadImage, supabase } from '../../services/supabaseClient';
 interface GalleryManagementTabProps {
     galleryImages: GalleryImage[];
     trips: Trip[];
+    currentUser: User;
     // Fix: Changed `Promise<any>` to `PromiseLike<any>` to correctly type Supabase's "thenable" query builders.
     onAdminAction: (action: PromiseLike<any>, successMsg: string, errorMsg: string) => void;
 }
 
-const GalleryManagementTab: React.FC<GalleryManagementTabProps> = ({ galleryImages, trips, onAdminAction }) => {
+const GalleryManagementTab: React.FC<GalleryManagementTabProps> = ({ galleryImages, trips, currentUser, onAdminAction }) => {
     const [galleryFile, setGalleryFile] = useState<File | null>(null);
     const [galleryCaption, setGalleryCaption] = useState('');
     const [galleryTripId, setGalleryTripId] = useState<number | ''>('');
@@ -26,7 +27,7 @@ const GalleryManagementTab: React.FC<GalleryManagementTabProps> = ({ galleryImag
             return;
         }
         setIsUploading(true);
-        const { data, error } = await uploadImage(galleryFile);
+        const { data, error } = await uploadImage(galleryFile, currentUser.id);
         if (error) {
             alert('Image upload failed.');
             setIsUploading(false);

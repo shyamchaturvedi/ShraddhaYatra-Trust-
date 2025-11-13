@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { TeamMember } from '../../types';
+import { TeamMember, User } from '../../types';
 import { uploadImage } from '../../services/supabaseClient';
 import Spinner from '../Spinner';
 
 interface AddEditTeamMemberFormProps {
   member: TeamMember | null;
+  currentUser: User;
   onSave: (memberData: Omit<TeamMember, 'id'> | TeamMember) => void;
   onClose: () => void;
 }
 
-const AddEditTeamMemberForm: React.FC<AddEditTeamMemberFormProps> = ({ member, onSave, onClose }) => {
+const AddEditTeamMemberForm: React.FC<AddEditTeamMemberFormProps> = ({ member, currentUser, onSave, onClose }) => {
   const [formData, setFormData] = useState({
     name: member?.name || '',
     role: member?.role || '',
@@ -47,7 +48,7 @@ const AddEditTeamMemberForm: React.FC<AddEditTeamMemberFormProps> = ({ member, o
     let finalImageUrl = formData.image_url;
 
     if (selectedFile) {
-        const { data, error } = await uploadImage(selectedFile);
+        const { data, error } = await uploadImage(selectedFile, currentUser.id);
         if (error) {
             alert('Image upload failed. Please try again.');
             console.error('Upload failed:', error);

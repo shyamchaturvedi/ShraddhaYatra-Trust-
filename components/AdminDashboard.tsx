@@ -12,6 +12,7 @@ import SiteContentTab from './admin/SiteContentTab';
 import UserManagementTab from './admin/UserManagementTab';
 
 interface AdminDashboardProps {
+  currentUser: User;
   trips: Trip[];
   bookings: Booking[];
   users: User[];
@@ -32,14 +33,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     
     const tabs = [
         { key: 'overview', name: 'Overview', component: <OverviewTab trips={props.trips} bookings={props.bookings} donations={props.donations} users={props.users} /> },
-        { key: 'trips', name: 'Trip Management', component: <TripManagementTab trips={props.trips} onAdminAction={props.onAdminAction} onSendNotification={props.onSendNotification} /> },
+        { key: 'trips', name: 'Trip Management', component: <TripManagementTab trips={props.trips} onAdminAction={props.onAdminAction} onSendNotification={props.onSendNotification} currentUser={props.currentUser} /> },
         { key: 'bookings', name: 'Booking Management', component: <BookingManagementTab bookings={props.bookings} trips={props.trips} users={props.users} onAdminAction={props.onAdminAction} /> },
         { key: 'users', name: 'User Management', component: <UserManagementTab users={props.users} /> },
-        { key: 'gallery', name: 'Gallery Management', component: <GalleryManagementTab galleryImages={props.galleryImages} trips={props.trips} onAdminAction={props.onAdminAction} /> },
-        { key: 'testimonials', name: 'Testimonials', component: <TestimonialManagementTab testimonials={props.testimonials} onAdminAction={props.onAdminAction} /> },
-        { key: 'team', name: 'Team Management', component: <TeamManagementTab teamMembers={props.teamMembers} onAdminAction={props.onAdminAction} /> },
+        { key: 'gallery', name: 'Gallery Management', component: <GalleryManagementTab galleryImages={props.galleryImages} trips={props.trips} onAdminAction={props.onAdminAction} currentUser={props.currentUser} /> },
+        { key: 'testimonials', name: 'Testimonials', component: <TestimonialManagementTab testimonials={props.testimonials} onAdminAction={props.onAdminAction} currentUser={props.currentUser} /> },
+        { key: 'team', name: 'Team Management', component: <TeamManagementTab teamMembers={props.teamMembers} onAdminAction={props.onAdminAction} currentUser={props.currentUser} /> },
         { key: 'donations', name: 'Donation History', component: <DonationHistoryTab donations={props.donations} /> },
-        { key: 'settings', name: 'Site Content', component: <SiteContentTab aboutContent={props.aboutContent} contactContent={props.contactContent} upiId={props.upiId} siteLogoUrl={props.siteLogoUrl} onAdminAction={props.onAdminAction} /> },
+        { key: 'settings', name: 'Site Content', component: <SiteContentTab aboutContent={props.aboutContent} contactContent={props.contactContent} upiId={props.upiId} siteLogoUrl={props.siteLogoUrl} onAdminAction={props.onAdminAction} currentUser={props.currentUser} /> },
     ];
 
     const activeComponent = tabs.find(tab => tab.key === activeTab)?.component;

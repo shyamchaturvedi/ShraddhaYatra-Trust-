@@ -10,7 +10,7 @@ interface HomeViewProps {
 
 const TestimonialCard: React.FC<{ testimonial: Testimonial }> = ({ testimonial }) => (
     <div className="flex-shrink-0 w-80 bg-white rounded-xl shadow-lg p-6 flex flex-col items-center text-center snap-center">
-        <img src={testimonial.author_image_url} alt={testimonial.author_name} className="w-20 h-20 rounded-full object-cover mb-4 border-4 border-amber-200" />
+        <img src={testimonial.author_image_url || '/images/testimonials/avatar.png'} alt={testimonial.author_name} className="w-20 h-20 rounded-full object-cover mb-4 border-4 border-amber-200" />
         <p className="text-gray-600 italic flex-grow">"{testimonial.message}"</p>
         <div className="mt-4">
             <p className="font-bold text-amber-900">{testimonial.author_name}</p>
@@ -57,7 +57,7 @@ const HomeView: React.FC<HomeViewProps> = ({ trips, testimonials, onViewDetails 
     <>
         <div 
             className="relative h-[60vh] flex items-center justify-center text-white text-center px-4"
-            style={{ backgroundImage: `url('https://picsum.photos/seed/temple/1600/900')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+            style={{ backgroundImage: `url('/images/hero.jpg')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         >
             <div className="absolute inset-0 bg-black bg-opacity-50"></div>
             <div className="relative z-10">

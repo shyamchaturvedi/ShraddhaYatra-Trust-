@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { TeamMember } from '../../types';
+import { TeamMember, User } from '../../types';
 import { supabase } from '../../services/supabaseClient';
 import AddEditTeamMemberForm from './AddEditTeamMemberForm';
 import ConfirmationModal from '../ConfirmationModal';
 
 interface TeamManagementTabProps {
     teamMembers: TeamMember[];
+    currentUser: User;
     onAdminAction: (action: PromiseLike<any>, successMsg: string, errorMsg: string) => void;
 }
 
-const TeamManagementTab: React.FC<TeamManagementTabProps> = ({ teamMembers, onAdminAction }) => {
+const TeamManagementTab: React.FC<TeamManagementTabProps> = ({ teamMembers, currentUser, onAdminAction }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
     const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
@@ -90,7 +91,7 @@ const TeamManagementTab: React.FC<TeamManagementTabProps> = ({ teamMembers, onAd
                 ) : <p className="text-center p-4 text-gray-500">No team members found. Click 'Add New Member' to create one.</p>}
             </div>
 
-            {isModalOpen && <AddEditTeamMemberForm member={memberToEdit} onSave={handleSaveMember} onClose={() => setIsModalOpen(false)} />}
+            {isModalOpen && <AddEditTeamMemberForm member={memberToEdit} onSave={handleSaveMember} onClose={() => setIsModalOpen(false)} currentUser={currentUser} />}
             {memberToDelete && <ConfirmationModal isOpen={!!memberToDelete} title="Confirm Deletion" message={`Are you sure you want to delete "${memberToDelete.name}"?`} onConfirm={confirmDeleteMember} onClose={() => setMemberToDelete(null)} />}
         </>
     );

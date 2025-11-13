@@ -28,7 +28,7 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onViewDetails }) => {
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300 ease-in-out border border-amber-200 flex flex-col">
       <div className="relative">
-        <img className="w-full h-48 object-cover" src={trip.image_url} alt={trip.title} />
+        <img className="w-full h-48 object-cover" src={trip.image_url || '/images/trips/default.jpg'} alt={trip.title} />
         <span 
             className={`absolute top-2 right-2 text-xs font-semibold px-2.5 py-1 rounded-full ${statusStyles[trip.status]}`}
         >

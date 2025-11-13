@@ -50,7 +50,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, userName, setView, set
       <header className="bg-gradient-to-r from-amber-600 to-orange-500 text-white shadow-lg p-2 sticky top-0 z-50">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center cursor-pointer" onClick={() => handleNavigation('home')}>
-             <img src={logoUrl || '/logo.png'} alt="Shraddha Yatra Trust Logo" className="h-28 w-auto" />
+             <img src={logoUrl || '/images/logo.png'} alt="Shraddha Yatra Trust Logo" className="h-20 w-auto" />
           </div>
 
           {/* Desktop Navigation */}

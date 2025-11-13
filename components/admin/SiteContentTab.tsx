@@ -1,59 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { AboutContent, ContactContent } from '../../types';
-import { supabase, uploadImage } from '../../services/supabaseClient';
-import Spinner from '../Spinner';
+import React, { useState } from 'react';
+import { AboutContent, ContactContent, User } from '../../types';
+import { supabase } from '../../services/supabaseClient';
 
 interface SiteContentTabProps {
     aboutContent: AboutContent;
     contactContent: ContactContent;
     upiId: string;
     siteLogoUrl: string;
+    currentUser: User;
     onAdminAction: (action: PromiseLike<any>, successMsg: string, errorMsg: string) => void;
 }
 
-const SiteContentTab: React.FC<SiteContentTabProps> = ({ aboutContent, contactContent, upiId, siteLogoUrl, onAdminAction }) => {
+const SiteContentTab: React.FC<SiteContentTabProps> = ({ aboutContent, contactContent, upiId, siteLogoUrl, currentUser, onAdminAction }) => {
     const [currentUpi, setCurrentUpi] = useState(upiId);
     const [currentAbout, setCurrentAbout] = useState(aboutContent);
     const [currentContact, setCurrentContact] = useState(contactContent);
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState<string | null>(siteLogoUrl);
-    const [isLogoUploading, setIsLogoUploading] = useState(false);
-
-    useEffect(() => {
-        setLogoPreview(siteLogoUrl);
-    }, [siteLogoUrl]);
-    
-    const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setLogoFile(file);
-            setLogoPreview(URL.createObjectURL(file));
-        }
-    };
-    
-    const handleLogoUpdate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!logoFile) {
-            alert("Please select a new logo file to upload.");
-            return;
-        }
-        setIsLogoUploading(true);
-        const { data, error } = await uploadImage(logoFile);
-
-        if (error) {
-            alert('Logo upload failed: ' + error.message);
-            setIsLogoUploading(false);
-            return;
-        }
-        
-        await onAdminAction(
-            supabase.from('config').update({ value: data.publicUrl }).eq('key', 'site_logo_url'),
-            'Site logo updated successfully.',
-            'Error updating site logo'
-        );
-        setIsLogoUploading(false);
-        setLogoFile(null);
-    };
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
     const handleUpiUpdate = (e: React.FormEvent) => {
         e.preventDefault();
@@ -82,32 +46,75 @@ const SiteContentTab: React.FC<SiteContentTabProps> = ({ aboutContent, contactCo
         );
     };
 
+    const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          setLogoFile(file);
+          setLogoPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleLogoUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!logoFile) {
+            alert('Please select a new logo file.');
+            return;
+        }
+        setIsUploadingLogo(true);
+        
+        const fileExt = logoFile.name.split('.').pop();
+        const filePath = `config/logo.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('images')
+            .upload(filePath, logoFile, { upsert: true });
+
+        if (uploadError) {
+            onAdminAction(Promise.reject(uploadError), '', 'Error uploading logo');
+            setIsUploadingLogo(false);
+            return;
+        }
+
+        const { data } = supabase.storage.from('images').getPublicUrl(filePath);
+        
+        // Add a timestamp to the URL to bypass browser cache
+        const newLogoUrl = `${data.publicUrl}?t=${new Date().getTime()}`;
+
+        await onAdminAction(
+            supabase.from('config').upsert({ key: 'site_logo_url', value: newLogoUrl }),
+            'Site logo updated successfully.',
+            'Error updating site logo URL in database'
+        );
+        
+        setLogoFile(null);
+        setIsUploadingLogo(false);
+    };
+
     return (
         <div className="space-y-8">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h3 className="text-2xl font-semibold text-orange-700 mb-4">Site Logo</h3>
+             <div className="bg-white p-6 rounded-lg shadow-md">
+                <h3 className="text-2xl font-semibold text-orange-700 mb-4">Site Branding</h3>
                 <form onSubmit={handleLogoUpdate} className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        {logoPreview && <img src={logoPreview} alt="Logo preview" className="h-16 w-auto bg-gray-100 p-1 rounded-md border" />}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Upload New Logo</label>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Site Logo</label>
+                        <div className="mt-2 flex items-center gap-4">
+                            <img src={logoPreview || '/images/logo.png'} alt="Current site logo" className="h-24 w-auto bg-white p-2 rounded shadow border"/>
                             <input 
                                 type="file" 
                                 onChange={handleLogoFileChange} 
-                                accept="image/png, image/jpeg, image/svg+xml" 
-                                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                                accept="image/png, image/jpeg, image/svg+xml"
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
                             />
                         </div>
                     </div>
-                    <div className="text-right flex items-center justify-end gap-4">
-                        {isLogoUploading && <Spinner />}
-                        <button type="submit" className="px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50" disabled={isLogoUploading || !logoFile}>
-                            Update Logo
+                    <div className="text-right">
+                        <button type="submit" className="px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50" disabled={!logoFile || isUploadingLogo}>
+                            {isUploadingLogo ? 'Uploading...' : 'Update Logo'}
                         </button>
                     </div>
                 </form>
             </div>
-            
+
             <div className="bg-white p-6 rounded-lg shadow-md">
                 <h3 className="text-2xl font-semibold text-orange-700 mb-4">About Us Page Content</h3>
                 <form onSubmit={handleAboutUpdate} className="space-y-4">

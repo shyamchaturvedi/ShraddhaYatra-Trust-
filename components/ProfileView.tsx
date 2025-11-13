@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { User, ToastType } from '../types';
 import Spinner from './Spinner';
 import { uploadImage } from '../services/supabaseClient';
@@ -46,15 +46,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const isProfileComplete = useMemo(() => {
-    return !!(
-      user.name && user.phone && user.dob && user.address && user.blood_group &&
-      user.emergency_contact_name && user.emergency_contact_phone &&
-      user.gov_id_type && user.gov_id_number && user.gov_id_image_url &&
-      user.profile_image_url
-    );
-  }, [user]);
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'govId') => {
     const file = e.target.files?.[0];
     if (file) {
@@ -81,7 +72,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
     
     // Upload profile picture if changed
     if (profilePicFile) {
-        const { data, error } = await uploadImage(profilePicFile);
+        const { data, error } = await uploadImage(profilePicFile, user.id);
         if (error) {
             addToast('Profile picture upload failed. Please try again.', 'error');
             setIsDetailsLoading(false);
@@ -92,7 +83,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
     
     // Upload government ID if changed
     if (govIdFile) {
-        const { data, error } = await uploadImage(govIdFile);
+        const { data, error } = await uploadImage(govIdFile, user.id);
         if (error) {
             addToast('Government ID upload failed. Please try again.', 'error');
             setIsDetailsLoading(false);
@@ -131,11 +122,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
   };
 
   const handleDownloadIdCard = async () => {
-    if (!isProfileComplete) {
-      addToast("Please complete your profile fully to download the ID card.", "info");
-      return;
-    }
-    
     setIsDownloading(true);
     
     const cardElement = document.getElementById('id-card-capture');
@@ -201,11 +187,11 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required />
+                  <input type="text" name="name" value={formData.name} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Mobile Number</label>
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} pattern="[0-9]{10}" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required />
+                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} pattern="[0-9]{10}" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
                 </div>
                  <div>
                   <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
@@ -282,19 +268,15 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
         {/* ID Card Section */}
         <div className="bg-white p-6 md:p-8 rounded-lg shadow-md text-center">
             <h3 className="text-2xl font-semibold text-orange-700 mb-4">Your Devotee ID Card</h3>
-            {!isProfileComplete ? (
-              <p className="text-amber-700 bg-amber-100 p-3 rounded-md">Please complete all fields in your profile, including uploading a profile picture and government ID, to generate your ID card.</p>
-            ) : (
-              <div>
-                <p className="text-gray-600 mb-4">Your profile is complete. You can now download your official ID card.</p>
-                <button 
-                  onClick={handleDownloadIdCard}
-                  className="px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-300" 
-                  disabled={isDownloading}>
-                  {isDownloading ? 'Generating...' : 'Download ID Card (PDF)'}
-                </button>
-              </div>
-            )}
+            <div>
+              <p className="text-gray-600 mb-4">You can download your official ID card. It is recommended to complete your profile for a more detailed card.</p>
+              <button 
+                onClick={handleDownloadIdCard}
+                className="px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-300" 
+                disabled={isDownloading}>
+                {isDownloading ? 'Generating...' : 'Download ID Card (PDF)'}
+              </button>
+            </div>
         </div>
 
         {/* Change Password Form */}

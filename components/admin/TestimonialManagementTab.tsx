@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { Testimonial } from '../../types';
+import { Testimonial, User } from '../../types';
 import Spinner from '../Spinner';
 import { uploadImage, supabase } from '../../services/supabaseClient';
 
 interface TestimonialManagementTabProps {
     testimonials: Testimonial[];
+    currentUser: User;
     // Fix: Changed `Promise<any>` to `PromiseLike<any>` to correctly type Supabase's "thenable" query builders.
     onAdminAction: (action: PromiseLike<any>, successMsg: string, errorMsg: string) => void;
 }
 
-const TestimonialManagementTab: React.FC<TestimonialManagementTabProps> = ({ testimonials, onAdminAction }) => {
+const TestimonialManagementTab: React.FC<TestimonialManagementTabProps> = ({ testimonials, currentUser, onAdminAction }) => {
     const [testimonialFile, setTestimonialFile] = useState<File | null>(null);
     const [testimonialAuthor, setTestimonialAuthor] = useState('');
     const [testimonialLocation, setTestimonialLocation] = useState('');
@@ -23,7 +24,7 @@ const TestimonialManagementTab: React.FC<TestimonialManagementTabProps> = ({ tes
             return;
         }
         setIsUploading(true);
-        const { data, error } = await uploadImage(testimonialFile);
+        const { data, error } = await uploadImage(testimonialFile, currentUser.id);
         if (error) {
             alert('Testimonial image upload failed.');
             setIsUploading(false);

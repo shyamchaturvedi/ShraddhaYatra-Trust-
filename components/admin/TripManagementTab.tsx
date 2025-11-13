@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trip, TripStatus } from '../../types';
+import { Trip, TripStatus, User } from '../../types';
 import AddEditTripForm from '../AddEditTripForm';
 import ConfirmationModal from '../ConfirmationModal';
 import NotificationModal from '../NotificationModal';
@@ -7,6 +7,7 @@ import { supabase } from '../../services/supabaseClient';
 
 interface TripManagementTabProps {
     trips: Trip[];
+    currentUser: User;
     // Fix: Changed `Promise<any>` to `PromiseLike<any>` to correctly type Supabase's "thenable" query builders.
     onAdminAction: (action: PromiseLike<any>, successMsg: string, errorMsg: string) => void;
     onSendNotification: (trip: Trip, message: string, newDate?: string) => void;
@@ -22,7 +23,7 @@ const formatDate = (dateString: string): string => {
 };
 
 
-const TripManagementTab: React.FC<TripManagementTabProps> = ({ trips, onAdminAction, onSendNotification }) => {
+const TripManagementTab: React.FC<TripManagementTabProps> = ({ trips, currentUser, onAdminAction, onSendNotification }) => {
     const [isTripModalOpen, setIsTripModalOpen] = useState(false);
     const [tripToEdit, setTripToEdit] = useState<Trip | null>(null);
     const [tripToDelete, setTripToDelete] = useState<Trip | null>(null);
@@ -103,7 +104,7 @@ const TripManagementTab: React.FC<TripManagementTabProps> = ({ trips, onAdminAct
                 ) : <p className="text-center p-4 text-gray-500">No trips found. Click 'Add New Trip' to create one.</p>}
             </div>
 
-            {isTripModalOpen && <AddEditTripForm trip={tripToEdit} onSave={handleSaveTrip} onClose={() => setIsTripModalOpen(false)} />}
+            {isTripModalOpen && <AddEditTripForm trip={tripToEdit} onSave={handleSaveTrip} onClose={() => setIsTripModalOpen(false)} currentUser={currentUser} />}
             {tripToNotify && <NotificationModal trip={tripToNotify} onSend={onSendNotification} onClose={() => setTripToNotify(null)} />}
             {tripToDelete && <ConfirmationModal isOpen={!!tripToDelete} title="Confirm Deletion" message={`Are you sure you want to delete "${tripToDelete.title}"?`} onConfirm={confirmDeleteTrip} onClose={() => setTripToDelete(null)} />}
         </>

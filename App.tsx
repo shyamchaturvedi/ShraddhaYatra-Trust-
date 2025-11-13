@@ -41,7 +41,6 @@ const App: React.FC = () => {
 
     // Dynamic Content State
     const [config, setConfig] = useState<any>({});
-    const [siteLogoUrl, setSiteLogoUrl] = useState('/logo.png');
     
     // Loading State
     const [isLoading, setIsLoading] = useState(true);
@@ -156,7 +155,6 @@ const App: React.FC = () => {
                 if (!configMap.contact_content) configMap.contact_content = CONTACT_CONTENT;
                 
                 setConfig(configMap);
-                setSiteLogoUrl(configMap.site_logo_url || '/logo.png');
             }
             
             if (currentProfile?.role === Role.ADMIN) {
@@ -334,6 +332,8 @@ const App: React.FC = () => {
         window.open(whatsappLink, '_blank');
     };
 
+    const siteLogoUrl = config.site_logo_url || '/images/logo.png';
+
     const renderContent = () => {
         if (isLoading) return <div className="flex justify-center items-center h-screen"><Spinner /></div>;
         const selectedTrip = trips.find(t => t.id === selectedTripId);
@@ -344,7 +344,7 @@ const App: React.FC = () => {
             case 'tripDetail': return selectedTrip ? <TripDetailView trip={selectedTrip} onBookNow={handleAddBooking} /> : <p>Trip not found.</p>;
             case 'bookings': return currentUser ? <BookingsView bookings={bookings} trips={trips} currentUser={currentUser} logoUrl={siteLogoUrl} /> : <p>Please log in.</p>;
             case 'admin':
-                return currentUser?.role === Role.ADMIN ? <AdminDashboard trips={trips} bookings={bookings} users={allUsers} donations={donations} galleryImages={galleryImages} testimonials={testimonials} teamMembers={teamMembers} aboutContent={config.about_content} contactContent={config.contact_content} upiId={config.upi_id} siteLogoUrl={siteLogoUrl} onAdminAction={handleAdminAction} onSendNotification={handleSendNotification} /> : <p>Access Denied.</p>;
+                return currentUser?.role === Role.ADMIN ? <AdminDashboard currentUser={currentUser} trips={trips} bookings={bookings} users={allUsers} donations={donations} galleryImages={galleryImages} testimonials={testimonials} teamMembers={teamMembers} aboutContent={config.about_content} contactContent={config.contact_content} upiId={config.upi_id} siteLogoUrl={siteLogoUrl} onAdminAction={handleAdminAction} onSendNotification={handleSendNotification} /> : <p>Access Denied.</p>;
             case 'profile': return currentUser ? <ProfileView user={currentUser} onUpdateUser={handleUpdateUser} onChangePassword={handleChangePassword} logoUrl={siteLogoUrl} addToast={addToast} /> : <p>Please log in.</p>;
             case 'donation': return <DonationView upiId={config.upi_id} onAddDonation={handleAddDonation} currentUser={currentUser} />;
             case 'about': return <AboutView />;
