@@ -22,8 +22,13 @@ import { ToastContainer } from './components/Toast';
 import { ABOUT_CONTENT, CONTACT_CONTENT } from './constants';
 
 const App: React.FC = () => {
-    const [view, setView] = useState('home');
-    const [selectedTripId, setSelectedTripId] = useState<number | null>(null);
+    // Persist view state in sessionStorage to survive reloads
+    const [view, setView] = useState(() => sessionStorage.getItem('appView') || 'home');
+    const [selectedTripId, setSelectedTripId] = useState<number | null>(() => {
+        const storedId = sessionStorage.getItem('selectedTripId');
+        return storedId ? parseInt(storedId, 10) : null;
+    });
+    
     const [authAction, setAuthAction] = useState<{ view: string; tripId?: number } | null>(null);
     
     // Auth state
@@ -49,6 +54,19 @@ const App: React.FC = () => {
     // Toast Notifications
     const { toasts, addToast, removeToast } = useToasts();
     
+    // Persist state to sessionStorage on change
+    useEffect(() => {
+        sessionStorage.setItem('appView', view);
+    }, [view]);
+
+    useEffect(() => {
+        if (selectedTripId !== null) {
+            sessionStorage.setItem('selectedTripId', String(selectedTripId));
+        } else {
+            sessionStorage.removeItem('selectedTripId');
+        }
+    }, [selectedTripId]);
+
     // --- DATA FETCHING ---
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -261,6 +279,9 @@ const App: React.FC = () => {
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
+        // Clear persisted state on logout
+        sessionStorage.removeItem('appView');
+        sessionStorage.removeItem('selectedTripId');
         setView('home');
         setSelectedTripId(null);
         setAuthAction(null);
