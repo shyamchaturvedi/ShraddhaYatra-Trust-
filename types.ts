@@ -1,4 +1,5 @@
 
+
 export enum Role {
   ADMIN = 'admin',
   MEMBER = 'member',
@@ -29,7 +30,16 @@ export interface User {
   name: string;
   phone: string;
   role: Role;
-  password?: string; // Added for mock authentication
+  password?: string; // Client-side only
+  dob?: string;
+  address?: string;
+  blood_group?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  gov_id_type?: string;
+  gov_id_number?: string;
+  gov_id_image_url?: string;
+  profile_image_url?: string;
 }
 
 export interface Trip {
@@ -101,4 +111,13 @@ export interface ContactContent {
   phone: string;
   email: string;
   whatsapp_number?: string; // For WhatsApp inquiries
+}
+
+export interface TeamMember {
+  id: number;
+  name: string;
+  role: string;
+  responsibility: string;
+  image_url: string;
+  display_order: number;
 }

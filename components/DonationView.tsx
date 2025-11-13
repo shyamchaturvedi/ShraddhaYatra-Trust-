@@ -32,7 +32,7 @@ const DonationView: React.FC<DonationViewProps> = ({ upiId, onAddDonation, curre
         }
     };
     
-    const upiLink = `upi://pay?pa=${upiId}&pn=ShraddhaYatra%20Trust&cu=INR`;
+    const upiLink = `upi://pay?pa=${upiId}&pn=Shraddha%20Yatra%20Trust&cu=INR`;
 
     return (
     <div className="max-w-4xl mx-auto p-4 md:p-8">

@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Trip, TripStatus } from '../types';
 
@@ -16,7 +17,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ trip, onClose, on
   const [newDate, setNewDate] = useState(trip.date);
 
   const generateMessage = () => {
-    const header = `Update from ShraddhaYatra Trust regarding your trip: "${trip.title}"\n\n`;
+    const header = `Update from Shraddha Yatra Trust regarding your trip: "${trip.title}"\n\n`;
     switch (template) {
       case 'reminder':
         return `${header}This is a friendly reminder that your journey is scheduled for tomorrow, ${new Date(trip.date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}. Please arrive at ${trip.from_station} by ${trip.time}. We wish you a blessed yatra!`;

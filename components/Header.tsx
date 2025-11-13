@@ -29,6 +29,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, userName, setView, set
     <>
       <button onClick={() => handleNavigation('home')} className="block w-full text-left py-2 px-3 rounded-md hover:bg-amber-200 transition-colors">Home</button>
       <button onClick={() => handleNavigation('about')} className="block w-full text-left py-2 px-3 rounded-md hover:bg-amber-200 transition-colors">About Us</button>
+      <button onClick={() => handleNavigation('ourTeam')} className="block w-full text-left py-2 px-3 rounded-md hover:bg-amber-200 transition-colors">Our Team</button>
       <button onClick={() => handleNavigation('gallery')} className="block w-full text-left py-2 px-3 rounded-md hover:bg-amber-200 transition-colors">Gallery</button>
       <button onClick={() => handleNavigation('contact')} className="block w-full text-left py-2 px-3 rounded-md hover:bg-amber-200 transition-colors">Contact</button>
       {isAuthenticated && (
@@ -49,7 +50,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, userName, setView, set
       <header className="bg-gradient-to-r from-amber-600 to-orange-500 text-white shadow-lg p-2 sticky top-0 z-50">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center cursor-pointer" onClick={() => handleNavigation('home')}>
-             <img src={logoUrl || '/logo.png'} alt="ShraddhaYatra Trust Logo" className="h-28 w-auto" />
+             <img src={logoUrl || '/logo.png'} alt="Shraddha Yatra Trust Logo" className="h-28 w-auto" />
           </div>
 
           {/* Desktop Navigation */}
@@ -69,7 +70,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, userName, setView, set
           </div>
           
           {/* Mobile Hamburger Button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center">
             <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 rounded-md text-amber-200 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
               <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>

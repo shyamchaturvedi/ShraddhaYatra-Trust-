@@ -3,6 +3,14 @@
 import React, { useRef } from 'react';
 import { Booking, Trip, User } from '../types';
 
+// Add this for TypeScript to recognize libraries from script tags
+declare global {
+  interface Window {
+    html2canvas: any;
+    jspdf: any;
+  }
+}
+
 interface BookingDetailsCardProps {
   booking: Booking;
   trip: Trip;
@@ -31,39 +39,120 @@ const formatBookingId = (booking: Booking): string => {
 const BookingDetailsCard: React.FC<BookingDetailsCardProps> = ({ booking, trip, user, logoUrl }) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const handlePrint = () => {
-    const cardElement = cardRef.current;
-    if (!cardElement) return;
-
-    // This function will run after the print dialog is closed
-    const afterPrint = () => {
-      document.body.classList.remove('is-printing');
-      cardElement.classList.remove('print-this');
-      window.removeEventListener('afterprint', afterPrint);
-    };
-
-    window.addEventListener('afterprint', afterPrint);
-
-    // Add classes to isolate the card for printing
-    document.body.classList.add('is-printing');
-    cardElement.classList.add('print-this');
-    
-    // Trigger the browser's print functionality
-    window.print();
-  };
-
   const formattedDate = formatDate(trip.date);
   const formattedBookingId = formatBookingId(booking);
 
-  const shareMessage = `Yatra Booking Confirmed!\n\nHi ${user.name},\nYour booking with ShraddhaYatra Trust for the "${trip.title}" is confirmed.\n\n*Trip Details:*\n- *Date:* ${formattedDate}\n- *Time:* ${trip.time}\n- *From:* ${trip.from_station}\n- *To:* ${trip.to_station}\n- *Train No:* ${trip.train_no}\n- *Platform:* ${trip.platform}\n\n*Booking Info:*\n- *Seats:* ${booking.seat_count}\n- *Booking ID:* ${formattedBookingId}\n\n*Important:* Please reach the station 10 minutes early.\n\nWe wish you a blessed journey!`;
+  const handleDownloadPng = () => {
+    const cardElement = cardRef.current;
+    if (!cardElement) return;
+    
+    if (typeof window.html2canvas === 'undefined') {
+        alert('Download feature is currently unavailable. Please try again later.');
+        return;
+    }
+    
+    // Find the button container to hide it during capture
+    const buttonContainer = cardElement.querySelector('.print-hide') as HTMLElement;
+    
+    // Hide buttons before capture
+    if(buttonContainer) buttonContainer.style.display = 'none';
+
+    window.html2canvas(cardElement, {
+      scale: 2, // For higher resolution
+      useCORS: true, // To capture the external QR code image
+      backgroundColor: '#ffffff', // Ensure a solid white background
+    }).then((canvas: HTMLCanvasElement) => {
+        // Show buttons again after capture
+        if(buttonContainer) buttonContainer.style.display = 'flex';
+
+        const image = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `Shraddha-Yatra-Booking-${formattedBookingId}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }).catch((err: any) => {
+        // Ensure buttons are shown again on error
+        if(buttonContainer) buttonContainer.style.display = 'flex';
+        console.error("Error generating ticket image:", err);
+        alert('An error occurred while generating the ticket image.');
+    });
+  };
+
+  const handleDownloadPdf = () => {
+    const cardElement = cardRef.current;
+    if (!cardElement) return;
+    
+    if (typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+        alert('Download feature is currently unavailable. Please try again later.');
+        return;
+    }
+
+    const buttonContainer = cardElement.querySelector('.print-hide') as HTMLElement;
+    
+    // Hide buttons before capture
+    if(buttonContainer) buttonContainer.style.display = 'none';
+
+    window.html2canvas(cardElement, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+    }).then((canvas: HTMLCanvasElement) => {
+        // Show buttons again after capture
+        if(buttonContainer) buttonContainer.style.display = 'flex';
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new window.jspdf.jsPDF({
+            orientation: 'p',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        
+        // Calculate aspect ratio
+        const ratio = canvasWidth / canvasHeight;
+        
+        // Scale image to fit within A4 page with a 10mm margin on all sides
+        let finalWidth = pdfWidth - 20;
+        let finalHeight = finalWidth / ratio;
+        
+        // If calculated height is greater than page height, scale based on height instead
+        if (finalHeight > pdfHeight - 20) {
+            finalHeight = pdfHeight - 20;
+            finalWidth = finalHeight * ratio;
+        }
+        
+        // Center the image on the page
+        const x = (pdfWidth - finalWidth) / 2;
+        const y = (pdfHeight - finalHeight) / 2;
+
+        pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+        pdf.save(`Shraddha-Yatra-Booking-${formattedBookingId}.pdf`);
+
+    }).catch((err: any) => {
+        // Ensure buttons are shown again on error
+        if(buttonContainer) buttonContainer.style.display = 'flex';
+        console.error("Error generating ticket PDF:", err);
+        alert('An error occurred while generating the ticket PDF.');
+    });
+  };
+
+
+  const shareMessage = `Yatra Booking Confirmed!\n\nHi ${user.name},\nYour booking with Shraddha Yatra Trust for the "${trip.title}" is confirmed.\n\n*Trip Details:*\n- *Date:* ${formattedDate}\n- *Time:* ${trip.time}\n- *From:* ${trip.from_station}\n- *To:* ${trip.to_station}\n- *Train No:* ${trip.train_no}\n- *Platform:* ${trip.platform}\n\n*Booking Info:*\n- *Seats:* ${booking.seat_count}\n- *Booking ID:* ${formattedBookingId}\n\n*Important:* Please reach the station 10 minutes early.\n\nWe wish you a blessed journey!`;
 
   const whatsappLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`;
 
   return (
     <div ref={cardRef} className="bg-white rounded-lg shadow-2xl max-w-2xl mx-auto my-8 p-6 md:p-8 border border-gray-200">
       <div className="text-center mb-6 border-b border-dashed border-gray-300 pb-4">
-        <img src={logoUrl} alt="ShraddhaYatra Trust Logo" className="mx-auto h-20 w-auto mb-3" />
-        <h2 className="text-3xl font-bold text-gray-800">ShraddhaYatra Trust</h2>
+        <img src={logoUrl} alt="Shraddha Yatra Trust Logo" className="mx-auto h-20 w-auto mb-3" />
+        <h2 className="text-3xl font-bold text-gray-800">Shraddha Yatra Trust</h2>
         <p className="text-gray-500">Yatra Booking Confirmation</p>
       </div>
       
@@ -129,11 +218,22 @@ const BookingDetailsCard: React.FC<BookingDetailsCardProps> = ({ booking, trip, 
           Share on WhatsApp
         </a>
         <button 
-          onClick={handlePrint}
+          onClick={handleDownloadPng}
           className="w-full md:w-auto flex items-center justify-center gap-2 bg-orange-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-orange-600 transition-colors"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clipRule="evenodd" /></svg>
-          Print / Save PDF
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 9.707a1 1 0 011.414 0L9 11.001V3a1 1 0 112 0v8.001l1.293-1.294a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+          Download PNG
+        </button>
+        <button 
+          onClick={handleDownloadPdf}
+          className="w-full md:w-auto flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-700 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 9.707a1 1 0 011.414 0L9 11.001V3a1 1 0 112 0v8.001l1.293-1.294a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+          Download PDF
         </button>
       </div>
     </div>

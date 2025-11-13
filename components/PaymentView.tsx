@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Trip, User } from '../types';
 import Spinner from './Spinner';
@@ -56,7 +57,7 @@ const PaymentView: React.FC<PaymentViewProps> = ({ details, user, onPaymentSucce
             )}
             {!isBooking && (
               <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-700">Donation to ShraddhaYatra Trust</span>
+                <span className="text-gray-700">Donation to Shraddha Yatra Trust</span>
                 <span className="font-semibold text-gray-800">₹{amount}</span>
               </div>
             )}

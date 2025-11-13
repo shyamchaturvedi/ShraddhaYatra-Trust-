@@ -19,7 +19,7 @@ export const getTripBlessing = async (trip: Trip): Promise<string> => {
   }
   
   try {
-    const prompt = `Generate a short, spiritual blessing (2-3 sentences) from ShraddhaYatra Trust for a devotee undertaking the "${trip.title}" pilgrimage from ${trip.from_station} to ${trip.to_station}. The tone should be uplifting, respectful, and encouraging.`;
+    const prompt = `Generate a short, spiritual blessing (2-3 sentences) from Shraddha Yatra Trust for a devotee undertaking the "${trip.title}" pilgrimage from ${trip.from_station} to ${trip.to_station}. The tone should be uplifting, respectful, and encouraging.`;
     
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',

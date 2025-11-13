@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { ContactContent } from '../types';
 
@@ -26,7 +27,7 @@ const ContactView: React.FC<ContactViewProps> = ({ content }) => {
             return;
         }
 
-        const fullMessage = `Inquiry from ShraddhaYatra Website:\n\n*Name:* ${name}\n*Phone:* ${phone}\n\n*Message:*\n${message}`;
+        const fullMessage = `Inquiry from Shraddha Yatra Website:\n\n*Name:* ${name}\n*Phone:* ${phone}\n\n*Message:*\n${message}`;
         const encodedMessage = encodeURIComponent(fullMessage);
         
         const whatsappUrl = `https://api.whatsapp.com/send?phone=${content.whatsapp_number}&text=${encodedMessage}`;

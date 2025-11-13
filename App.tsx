@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trip, User, Role, Booking, BookingStatus, Donation, TripStatus, GalleryImage, AboutContent, ContactContent, Testimonial, ToastType } from './types';
+import { Trip, User, Role, Booking, BookingStatus, Donation, TripStatus, GalleryImage, AboutContent, ContactContent, Testimonial, ToastType, TeamMember } from './types';
 import { supabase } from './services/supabaseClient';
 
 import Header from './components/Header';
@@ -15,9 +15,11 @@ import Footer from './components/Footer';
 import AboutView from './components/AboutView';
 import GalleryView from './components/GalleryView';
 import ContactView from './components/ContactView';
+import OurTeamView from './components/OurTeamView';
 import Spinner from './components/Spinner';
 import { useToasts } from './hooks/useToasts';
 import { ToastContainer } from './components/Toast';
+import { ABOUT_CONTENT, CONTACT_CONTENT } from './constants';
 
 const App: React.FC = () => {
     const [view, setView] = useState('home');
@@ -34,6 +36,7 @@ const App: React.FC = () => {
     const [donations, setDonations] = useState<Donation[]>([]);
     const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
     const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [allUsers, setAllUsers] = useState<User[]>([]); // For admin view
 
     // Dynamic Content State
@@ -42,20 +45,19 @@ const App: React.FC = () => {
     
     // Loading State
     const [isLoading, setIsLoading] = useState(true);
-    // Fix: Add authError state for login/register forms.
     const [authError, setAuthError] = useState('');
 
     // Toast Notifications
     const { toasts, addToast, removeToast } = useToasts();
-
+    
     // --- DATA FETCHING ---
     const fetchData = useCallback(async () => {
         setIsLoading(true);
+        let currentProfile: User | null = null;
         try {
             const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
             if (sessionError) throw sessionError;
 
-            let currentProfile: User | null = null;
             if (sessionData.session?.user) {
                 const userAuth = sessionData.session.user;
                 const { data: profile, error: profileError } = await supabase
@@ -65,14 +67,8 @@ const App: React.FC = () => {
                     .single();
 
                 if (profile) {
-                    // Profile exists, normal flow
                     currentProfile = profile;
-                    setCurrentUser(profile);
-                    setIsAuthenticated(true);
                 } else if (profileError && profileError.code === 'PGRST116') { 
-                    // PGRST116: "The result contains 0 rows"
-                    // Profile does NOT exist, but user is authenticated. This is the inconsistent state.
-                    // Let's create the profile to self-heal the account.
                     console.warn('User exists in auth but not in profiles. Creating profile to self-heal.');
                     
                     const newProfileData = {
@@ -89,67 +85,88 @@ const App: React.FC = () => {
                         .single();
 
                     if (insertError) {
-                        // If even this fails, something is very wrong. Log out the user.
                         addToast(`Could not fix your account. Please contact support. Error: ${insertError.message}`, 'error');
                         await supabase.auth.signOut();
-                        setCurrentUser(null);
-                        setIsAuthenticated(false);
+                        currentProfile = null;
                     } else if (insertedProfile) {
-                        // Profile created successfully!
                         addToast('Account recovered and login successful!', 'success');
                         currentProfile = insertedProfile;
-                        setCurrentUser(insertedProfile);
-                        setIsAuthenticated(true);
                     }
-                } else {
-                    // Some other profile error occurred
-                    if (profileError) console.error("Error fetching profile:", profileError);
-                    // Fallback to logged out state
-                    setCurrentUser(null);
-                    setIsAuthenticated(false);
+                } else if (profileError) {
+                    console.error("Error fetching profile:", profileError);
                 }
-            } else {
-                 // No session, user is logged out.
-                 setCurrentUser(null);
-                 setIsAuthenticated(false);
             }
+            
+            setCurrentUser(currentProfile);
+            setIsAuthenticated(!!currentProfile);
+
+            const logFetchError = (feature: string, error: any) => {
+                const errorMessage = `Error fetching ${feature}: ${error.message}`;
+                
+                // Check for RLS infinite recursion
+                if (error.message.includes("infinite recursion detected")) {
+                    // Log a detailed error for the developer.
+                    console.error(`A critical Supabase error occurred while fetching ${feature}: ${errorMessage}. This is likely due to a misconfigured Row Level Security (RLS) policy on your 'profiles' table. Please review your policies to remove recursive checks (e.g., a policy on 'profiles' that selects from 'profiles').`);
+                    // Show a generic but serious toast to the user.
+                    addToast('A database security policy error occurred. Please contact support.', 'error');
+                    return;
+                }
+                
+                // Check for missing 'team_members' table
+                if (error.message.includes("public.team_members")) {
+                    // Log a helpful warning for the developer, but don't show an error toast.
+                    console.warn(`Could not fetch team members. This is expected if you haven't set up the 'Our Team' feature in Supabase yet. The feature will be hidden. Error: ${error.message}`);
+                    return; // Don't show a toast for this specific, non-critical setup error.
+                }
+            
+                // Generic error toast for other issues
+                addToast(errorMessage, 'error');
+                console.error(errorMessage);
+            };
 
             const { data: tripsData, error: tripsError } = await supabase.from('trips').select('*').order('date', { ascending: false });
-            if (tripsError) throw tripsError;
-            setTrips(tripsData || []);
+            if (tripsError) logFetchError('trips', tripsError); else setTrips(tripsData || []);
 
             const { data: bookingsData, error: bookingsError } = await supabase.from('bookings').select('*');
-            if (bookingsError) throw bookingsError;
-            setBookings(bookingsData || []);
+            if (bookingsError) logFetchError('bookings', bookingsError); else setBookings(bookingsData || []);
 
             const { data: galleryData, error: galleryError } = await supabase.from('gallery').select('*');
-            if (galleryError) throw galleryError;
-            setGalleryImages(galleryData || []);
+            if (galleryError) logFetchError('gallery', galleryError); else setGalleryImages(galleryData || []);
             
             const { data: donationsData, error: donationsError } = await supabase.from('donations').select('*').order('created_at', { ascending: false });
-            if (donationsError) throw donationsError;
-            setDonations(donationsData || []);
+            if (donationsError) logFetchError('donations', donationsError); else setDonations(donationsData || []);
 
             const { data: testimonialsData, error: testimonialsError } = await supabase.from('testimonials').select('*').order('created_at', { ascending: false });
-            if (testimonialsError) throw testimonialsError;
-            setTestimonials(testimonialsData || []);
+            if (testimonialsError) logFetchError('testimonials', testimonialsError); else setTestimonials(testimonialsData || []);
+
+            const { data: teamData, error: teamError } = await supabase.from('team_members').select('*').order('display_order', { ascending: true });
+            if (teamError) {
+                logFetchError('team members', teamError);
+                setTeamMembers([]);
+            } else {
+                setTeamMembers(teamData || []);
+            }
 
             const { data: configData, error: configError } = await supabase.from('config').select('*');
-            if (configError) throw configError;
-            const configMap = (configData || []).reduce((acc, item) => ({...acc, [item.key]: item.value}), {});
-            setConfig(configMap);
-            setSiteLogoUrl(configMap.site_logo_url || '/logo.png');
+            if (configError) logFetchError('config', configError); else {
+                const configMap = (configData || []).reduce((acc, item) => ({...acc, [item.key]: item.value}), {});
+                
+                // Use fallback content if database is empty
+                if (!configMap.about_content) configMap.about_content = ABOUT_CONTENT;
+                if (!configMap.contact_content) configMap.contact_content = CONTACT_CONTENT;
+                
+                setConfig(configMap);
+                setSiteLogoUrl(configMap.site_logo_url || '/logo.png');
+            }
             
-            // For Admin
             if (currentProfile?.role === Role.ADMIN) {
                  const { data: usersData, error: usersError } = await supabase.from('profiles').select('*');
-                 if (usersError) throw usersError;
-                 setAllUsers(usersData || []);
+                 if (usersError) logFetchError('all users', usersError); else setAllUsers(usersData || []);
             }
 
         } catch (error: any) {
-            addToast(`Error fetching data: ${error.message}`, 'error');
-            console.error("Error fetching data:", error.message);
+            addToast(`A critical error occurred: ${error.message}`, 'error');
+            console.error("Critical error fetching data:", error.message);
         } finally {
             setIsLoading(false);
         }
@@ -168,7 +185,6 @@ const App: React.FC = () => {
 
     // --- HANDLERS ---
     const handleLogin = async (phone: string, pass: string) => {
-        // Fix: Reset auth error on new attempt and set it on failure.
         setAuthError('');
         const { data, error } = await supabase.auth.signInWithPassword({ phone: `+91${phone}`, password: pass });
         if (error) {
@@ -187,7 +203,6 @@ const App: React.FC = () => {
     };
 
     const handleRegister = async (name: string, phone: string, pass: string): Promise<boolean> => {
-        // Fix: Reset auth error on new attempt and set it on failure.
         setAuthError('');
         const { data, error } = await supabase.auth.signUp({ 
             phone: `+91${phone}`, 
@@ -202,7 +217,6 @@ const App: React.FC = () => {
         }
         
         if (data.user) {
-            // After successful signup, create a corresponding user profile.
             const { error: profileError } = await supabase.from('profiles').insert({
                 id: data.user.id,
                 name,
@@ -211,8 +225,6 @@ const App: React.FC = () => {
             });
 
             if (profileError) {
-                // This is a critical error. The user exists in auth but has no profile.
-                // Inform the user and log them out to prevent an inconsistent state.
                 addToast(`Registration failed during profile creation: ${profileError.message}`, 'error');
                 setAuthError(profileError.message);
                 await supabase.auth.signOut();
@@ -226,14 +238,15 @@ const App: React.FC = () => {
         return false;
     };
 
-    const handleUpdateUser = async (updatedUser: User) => {
-        const { error } = await supabase.from('profiles').update({ name: updatedUser.name, phone: updatedUser.phone }).eq('id', updatedUser.id);
+    const handleUpdateUser = async (userId: string, updatedData: Partial<User>) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, password, ...dataToUpdate } = updatedData; // Ensure password is not sent
+        const { error } = await supabase.from('profiles').update(dataToUpdate).eq('id', userId);
         if (error) {
             addToast('Error updating profile: ' + error.message, 'error');
         } else {
             addToast('Profile updated successfully!', 'success');
             await fetchData();
-            setView('home');
         }
     };
     
@@ -300,7 +313,6 @@ const App: React.FC = () => {
         }
     };
     
-    // Fix: Changed `Promise<any>` to `PromiseLike<any>` to correctly type Supabase's "thenable" query builders.
     const handleAdminAction = async (action: PromiseLike<any>, successMsg: string, errorMsg: string) => {
         const { error } = await action;
         if (error) {
@@ -327,17 +339,16 @@ const App: React.FC = () => {
         const selectedTrip = trips.find(t => t.id === selectedTripId);
 
         switch (view) {
-            // Fix: Pass the `authError` state as the `loginError` prop.
             case 'login': return <LoginView onLogin={handleLogin} setView={setView} loginError={authError} />;
-            // Fix: Pass the `authError` state as the `loginError` prop.
             case 'register': return <RegisterView onRegister={handleRegister} setView={setView} loginError={authError} />;
             case 'tripDetail': return selectedTrip ? <TripDetailView trip={selectedTrip} onBookNow={handleAddBooking} /> : <p>Trip not found.</p>;
             case 'bookings': return currentUser ? <BookingsView bookings={bookings} trips={trips} currentUser={currentUser} logoUrl={siteLogoUrl} /> : <p>Please log in.</p>;
             case 'admin':
-                return currentUser?.role === Role.ADMIN ? <AdminDashboard trips={trips} bookings={bookings} users={allUsers} donations={donations} galleryImages={galleryImages} testimonials={testimonials} aboutContent={config.about_content} contactContent={config.contact_content} upiId={config.upi_id} siteLogoUrl={siteLogoUrl} onAdminAction={handleAdminAction} onSendNotification={handleSendNotification} /> : <p>Access Denied.</p>;
-            case 'profile': return currentUser ? <ProfileView user={currentUser} onUpdateUser={handleUpdateUser} onChangePassword={handleChangePassword} /> : <p>Please log in.</p>;
+                return currentUser?.role === Role.ADMIN ? <AdminDashboard trips={trips} bookings={bookings} users={allUsers} donations={donations} galleryImages={galleryImages} testimonials={testimonials} teamMembers={teamMembers} aboutContent={config.about_content} contactContent={config.contact_content} upiId={config.upi_id} siteLogoUrl={siteLogoUrl} onAdminAction={handleAdminAction} onSendNotification={handleSendNotification} /> : <p>Access Denied.</p>;
+            case 'profile': return currentUser ? <ProfileView user={currentUser} onUpdateUser={handleUpdateUser} onChangePassword={handleChangePassword} logoUrl={siteLogoUrl} /> : <p>Please log in.</p>;
             case 'donation': return <DonationView upiId={config.upi_id} onAddDonation={handleAddDonation} currentUser={currentUser} />;
-            case 'about': return <AboutView content={config.about_content} />;
+            case 'about': return <AboutView />;
+            case 'ourTeam': return <OurTeamView teamMembers={teamMembers} />;
             case 'gallery': return <GalleryView trips={trips} images={galleryImages} />;
             case 'contact': return <ContactView content={config.contact_content} />;
             case 'home':
@@ -348,7 +359,15 @@ const App: React.FC = () => {
     return (
         <div className="min-h-screen bg-amber-50 text-gray-900 font-sans flex flex-col">
             <ToastContainer toasts={toasts} removeToast={removeToast} />
-            <Header isAuthenticated={isAuthenticated} userName={currentUser?.name || ''} currentRole={currentUser?.role || Role.MEMBER} setView={setView} setSelectedTripId={setSelectedTripId} onLogout={handleLogout} logoUrl={siteLogoUrl} />
+            <Header 
+                isAuthenticated={isAuthenticated} 
+                userName={currentUser?.name || ''} 
+                currentRole={currentUser?.role || Role.MEMBER} 
+                setView={setView} 
+                setSelectedTripId={setSelectedTripId} 
+                onLogout={handleLogout} 
+                logoUrl={siteLogoUrl}
+             />
             <main className="flex-grow">{renderContent()}</main>
             <Footer logoUrl={siteLogoUrl}/>
         </div>

@@ -1,12 +1,11 @@
 
+
 import React from 'react';
-import { AboutContent } from '../types';
+import { ABOUT_CONTENT } from '../constants';
 
-interface AboutViewProps {
-  content: AboutContent;
-}
+const AboutView: React.FC = () => {
+  const content = ABOUT_CONTENT; // Always use the correct, static content
 
-const AboutView: React.FC<AboutViewProps> = ({ content }) => {
   return (
     <div className="bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
