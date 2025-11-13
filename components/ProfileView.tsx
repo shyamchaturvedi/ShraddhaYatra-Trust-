@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { User } from '../types';
+import { User, ToastType } from '../types';
 import Spinner from './Spinner';
 import { uploadImage } from '../services/supabaseClient';
 import IDCard from './IDCard';
@@ -17,9 +17,10 @@ interface ProfileViewProps {
   onUpdateUser: (userId: string, updatedData: Partial<User>) => Promise<void>;
   onChangePassword: (newPassword: string) => Promise<boolean>;
   logoUrl: string;
+  addToast: (message: string, type: ToastType) => void;
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangePassword, logoUrl }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangePassword, logoUrl, addToast }) => {
   const [formData, setFormData] = useState<Partial<User>>({
     name: user.name || '',
     phone: user.phone || '',
@@ -82,7 +83,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
     if (profilePicFile) {
         const { data, error } = await uploadImage(profilePicFile);
         if (error) {
-            alert('Profile picture upload failed. Please try again.');
+            addToast('Profile picture upload failed. Please try again.', 'error');
             setIsDetailsLoading(false);
             return;
         }
@@ -93,7 +94,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
     if (govIdFile) {
         const { data, error } = await uploadImage(govIdFile);
         if (error) {
-            alert('Government ID upload failed. Please try again.');
+            addToast('Government ID upload failed. Please try again.', 'error');
             setIsDetailsLoading(false);
             return;
         }
@@ -131,7 +132,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
 
   const handleDownloadIdCard = async () => {
     if (!isProfileComplete) {
-      alert("Please complete your profile fully to download the ID card.");
+      addToast("Please complete your profile fully to download the ID card.", "info");
       return;
     }
     
@@ -139,7 +140,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
     
     const cardElement = document.getElementById('id-card-capture');
     if (!cardElement || typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-        alert("Download feature is currently unavailable. Please try again later.");
+        addToast("Download feature is currently unavailable. Please try again later.", "error");
         setIsDownloading(false);
         return;
     }
@@ -176,7 +177,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
         pdf.save(`Shraddha-Yatra-ID-Card-${user.name}.pdf`);
     } catch (err) {
         console.error("Error generating ID card PDF:", err);
-        alert('An error occurred while generating the ID card.');
+        addToast('An error occurred while generating the ID card.', 'error');
     } finally {
         setIsDownloading(false);
     }

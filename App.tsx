@@ -345,7 +345,7 @@ const App: React.FC = () => {
             case 'bookings': return currentUser ? <BookingsView bookings={bookings} trips={trips} currentUser={currentUser} logoUrl={siteLogoUrl} /> : <p>Please log in.</p>;
             case 'admin':
                 return currentUser?.role === Role.ADMIN ? <AdminDashboard trips={trips} bookings={bookings} users={allUsers} donations={donations} galleryImages={galleryImages} testimonials={testimonials} teamMembers={teamMembers} aboutContent={config.about_content} contactContent={config.contact_content} upiId={config.upi_id} siteLogoUrl={siteLogoUrl} onAdminAction={handleAdminAction} onSendNotification={handleSendNotification} /> : <p>Access Denied.</p>;
-            case 'profile': return currentUser ? <ProfileView user={currentUser} onUpdateUser={handleUpdateUser} onChangePassword={handleChangePassword} logoUrl={siteLogoUrl} /> : <p>Please log in.</p>;
+            case 'profile': return currentUser ? <ProfileView user={currentUser} onUpdateUser={handleUpdateUser} onChangePassword={handleChangePassword} logoUrl={siteLogoUrl} addToast={addToast} /> : <p>Please log in.</p>;
             case 'donation': return <DonationView upiId={config.upi_id} onAddDonation={handleAddDonation} currentUser={currentUser} />;
             case 'about': return <AboutView />;
             case 'ourTeam': return <OurTeamView teamMembers={teamMembers} />;
