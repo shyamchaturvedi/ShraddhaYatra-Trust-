@@ -7,7 +7,8 @@ interface IDCardProps {
 }
 
 const IDCard: React.FC<IDCardProps> = ({ user, logoUrl }) => {
-  const memberId = `SYT-${String(user.id).substring(0, 8).toUpperCase()}`;
+  // Format based on new design image: SYT-FB + 6 chars of user ID
+  const memberId = `SYT-FB${String(user.id).substring(0, 6).toUpperCase()}`;
 
   const qrData =
     `MemberID: ${memberId}\n` +
@@ -19,60 +20,62 @@ const IDCard: React.FC<IDCardProps> = ({ user, logoUrl }) => {
       id="id-card-capture"
       className="
         relative
-        w-[340px]
-        h-[220px]
+        w-[340px] /* ~3.54 in @ 96 DPI */
+        h-[214px] /* ~2.23 in @ 96 DPI, matches CR80 aspect ratio */
         bg-white
-        border border-gray-300
-        rounded-lg
+        border border-gray-200
+        rounded-xl
         shadow-lg
-        p-2
+        p-3
         flex flex-col
         overflow-hidden
         font-sans
-        text-[8pt]
         text-black
       "
       style={{
-        lineHeight: 1.15,
-        imageRendering: "crisp-edges",
+        lineHeight: 1.2,
       }}
     >
-
       {/* Header */}
-      <header className="flex items-center border-b-2 border-orange-500 pb-1 shrink-0">
+      <header className="flex items-center shrink-0">
         <img
           src={logoUrl}
           alt="Logo"
-          className="h-9 w-auto shrink-0"
-          style={{ imageRendering: "high-quality" }}
+          className="h-10 w-10 shrink-0"
+          // Fix: Replaced non-standard 'high-quality' with 'smooth' for imageRendering.
+          style={{ imageRendering: "smooth" }}
         />
         <div className="ml-2 min-w-0">
-          <h1 className="text-[12pt] font-bold text-amber-900 leading-none break-words">
+          <h1 className="font-serif text-[14pt] font-bold text-amber-900 leading-none">
             Shraddha Yatra Trust
           </h1>
-          <p className="text-[8pt] text-orange-700 break-words">
+          <p className="text-[9pt] text-orange-700 leading-none mt-0.5">
             Devotee Identity Card
           </p>
         </div>
       </header>
+      
+      <div className="w-full h-[2px] bg-orange-400 mt-1.5 shrink-0" />
+
 
       {/* Body */}
-      <main className="flex flex-1 pt-1 overflow-hidden">
+      <main className="flex flex-1 pt-2 overflow-hidden">
 
         {/* LEFT SIDE (Photo + QR) */}
-        <div className="w-[32%] flex flex-col items-center gap-1 shrink-0">
+        <div className="w-[35%] flex flex-col items-center justify-start gap-1 shrink-0 pt-1">
           <img
             src={user.profile_image_url || "https://via.placeholder.com/150"}
             alt="Profile"
             className="
-              w-[70px]
-              h-[85px]
+              w-[75px]
+              h-[90px]
               object-cover
-              border-2
+              border-[3px]
               border-orange-400
-              rounded-md
+              rounded-lg
             "
-            style={{ imageRendering: "high-quality" }}
+            // Fix: Replaced non-standard 'high-quality' with 'smooth' for imageRendering.
+            style={{ imageRendering: "smooth" }}
           />
 
           <img
@@ -80,7 +83,7 @@ const IDCard: React.FC<IDCardProps> = ({ user, logoUrl }) => {
               qrData
             )}`}
             alt="QR Code"
-            className="w-[60px] h-[60px]"
+            className="w-[65px] h-[65px] mt-auto"
             style={{
               imageRendering: "pixelated",
             }}
@@ -88,69 +91,58 @@ const IDCard: React.FC<IDCardProps> = ({ user, logoUrl }) => {
         </div>
 
         {/* RIGHT SIDE DETAILS */}
-        <div className="w-[68%] pl-2 flex flex-col justify-between overflow-hidden">
+        <div className="w-[65%] pl-2 flex flex-col text-[8pt]">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 flex-grow">
+                {/* Full Name */}
+                <div className="col-span-1">
+                    <p className="text-gray-500">Full Name</p>
+                    <p className="font-bold text-amber-900 text-[9pt] break-words">{user.name}</p>
+                </div>
+                {/* Member ID */}
+                <div className="col-span-1">
+                    <p className="text-gray-500">Member ID</p>
+                    <p className="font-semibold break-words">{memberId}</p>
+                </div>
+                {/* DOB */}
+                <div className="col-span-1">
+                    <p className="text-gray-500">Date of Birth</p>
+                    <p className="font-semibold break-words">
+                        {user.dob ? new Date(user.dob).toLocaleDateString("en-GB") : "N/A"}
+                    </p>
+                </div>
+                {/* Blood Group */}
+                <div className="col-span-1">
+                    <p className="text-gray-500">Blood Group</p>
+                    <p className="font-bold text-red-600 text-[10pt] break-words">
+                        {user.blood_group?.toUpperCase() || "N/A"}
+                    </p>
+                </div>
+                {/* Phone */}
+                <div className="col-span-2">
+                    <p className="text-gray-500">Phone</p>
+                    <p className="font-semibold break-words">{user.phone}</p>
+                </div>
+                {/* Address */}
+                <div className="col-span-2">
+                    <p className="text-gray-500">Address</p>
+                    <p className="font-semibold leading-tight break-words">
+                        {user.address || "N/A"}
+                    </p>
+                </div>
+            </div>
 
-          {/* Core Details */}
-          <div className="overflow-hidden text-[7pt] leading-snug space-y-1">
-
-            <div className="grid grid-cols-2 gap-x-1">
-              <div>
-                <p className="text-gray-500 text-[6.5pt]">Full Name</p>
-                <p className="font-bold text-amber-900 break-words">
-                  {user.name}
+            {/* Emergency Contact */}
+            <div className="text-[7.5pt] mt-auto">
+                <p className="text-gray-500">In Case of Emergency, Contact:</p>
+                <p className="font-bold break-words">
+                    {user.emergency_contact_name || "N/A"} ({user.emergency_contact_phone || "N/A"})
                 </p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-[6.5pt]">Member ID</p>
-                <p className="font-semibold break-words">{memberId}</p>
-              </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-x-1">
-              <div>
-                <p className="text-gray-500 text-[6.5pt]">Date of Birth</p>
-                <p className="font-semibold break-words">
-                  {user.dob
-                    ? new Date(user.dob).toLocaleDateString("en-GB")
-                    : "N/A"}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-[6.5pt]">Blood Group</p>
-                <p className="font-bold text-red-600 break-words">
-                  {user.blood_group?.toUpperCase() || "N/A"}
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-gray-500 text-[6.5pt]">Phone</p>
-              <p className="font-semibold break-words">{user.phone}</p>
-            </div>
-
-            <div className="overflow-hidden">
-              <p className="text-gray-500 text-[6.5pt]">Address</p>
-              <p className="font-semibold break-words leading-tight">
-                {user.address || "N/A"}
-              </p>
-            </div>
-          </div>
-
-          {/* Emergency Contact */}
-          <div className="text-[6.5pt] mt-1">
-            <p className="text-gray-500 break-words">
-              In Case of Emergency, Contact:
-            </p>
-            <p className="font-bold break-words">
-              {user.emergency_contact_name || "N/A"} (
-              {user.emergency_contact_phone || "N/A"})
-            </p>
-          </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="text-center text-[6.5pt] text-gray-500 border-t border-gray-200 pt-1 break-words">
+      <footer className="text-center text-[7pt] text-gray-500 pt-1.5 border-t border-gray-200 mt-1 shrink-0">
         This card serves as identification for Shraddha Yatra Trust yatras.
       </footer>
     </div>
