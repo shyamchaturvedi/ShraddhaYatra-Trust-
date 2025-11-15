@@ -131,14 +131,25 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
         return;
     }
 
+    // Define target dimensions for a crisp, high-resolution capture (300 DPI)
+    // Standard credit card dimensions: 85.6mm x 53.98mm
+    // Conversion: 1 inch = 25.4 mm
+    const cardWidthInches = 85.6 / 25.4;
+    const cardHeightInches = 53.98 / 25.4;
+    const dpi = 300;
+    const canvasWidth = Math.floor(cardWidthInches * dpi);
+    const canvasHeight = Math.floor(cardHeightInches * dpi);
+
     try {
         const canvas = await window.html2canvas(cardElement, {
-            scale: 3, // Higher scale for better quality
+            width: canvasWidth,
+            height: canvasHeight,
+            scale: 1, // Scale is now controlled by explicit width/height for consistency
             useCORS: true,
-            backgroundColor: null, // Use transparent background for cleaner embedding
+            backgroundColor: '#ffffff', // Use a solid background to avoid transparency issues on some PDF viewers
         });
 
-        const imgData = canvas.toDataURL('image/png');
+        const imgData = canvas.toDataURL('image/png', 1.0); // Use max quality PNG
         
         // Create a standard A4 PDF (210mm x 297mm)
         const pdf = new window.jspdf.jsPDF({
@@ -149,21 +160,62 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
         
-        // Standard credit card size in mm
-        const cardWidth = 85.6;
-        const cardHeight = 53.98;
+        // Use the standard credit card dimensions for placing in the PDF
+        const cardWidthMM = 85.6;
+        const cardHeightMM = 53.98;
 
         // Center the card on the page
-        const x = (pdfWidth - cardWidth) / 2;
+        const x = (pdfWidth - cardWidthMM) / 2;
         const y = 30; // 30mm from the top
 
         // Add the card image
-        pdf.addImage(imgData, 'PNG', x, y, cardWidth, cardHeight);
+        pdf.addImage(imgData, 'PNG', x, y, cardWidthMM, cardHeightMM);
 
         pdf.save(`Shraddha-Yatra-ID-Card-${user.name}.pdf`);
-    } catch (err) {
+    } catch (err: any) {
         console.error("Error generating ID card PDF:", err);
-        addToast('An error occurred while generating the ID card.', 'error');
+        addToast(`An error occurred while generating the ID card: ${err.message || 'Unknown error'}.`, 'error');
+    } finally {
+        setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadIdCardJpg = async () => {
+    setIsDownloading(true);
+    
+    const cardElement = document.getElementById('id-card-capture');
+    if (!cardElement || typeof window.html2canvas === 'undefined') {
+        addToast("Download feature is currently unavailable. Please try again later.", "error");
+        setIsDownloading(false);
+        return;
+    }
+
+    // Use the same high-DPI settings for a quality image
+    const cardWidthInches = 85.6 / 25.4;
+    const cardHeightInches = 53.98 / 25.4;
+    const dpi = 300;
+    const canvasWidth = Math.floor(cardWidthInches * dpi);
+    const canvasHeight = Math.floor(cardHeightInches * dpi);
+
+    try {
+        const canvas = await window.html2canvas(cardElement, {
+            width: canvasWidth,
+            height: canvasHeight,
+            scale: 1,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+        });
+
+        const image = canvas.toDataURL('image/jpeg', 0.95); // High quality JPG
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `Shraddha-Yatra-ID-Card-${user.name}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch (err: any) {
+        console.error("Error generating ID card JPG:", err);
+        addToast(`An error occurred while generating the ID card: ${err.message || 'Unknown error'}.`, 'error');
     } finally {
         setIsDownloading(false);
     }
@@ -270,12 +322,20 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangeP
             <h3 className="text-2xl font-semibold text-orange-700 mb-4">Your Devotee ID Card</h3>
             <div>
               <p className="text-gray-600 mb-4">You can download your official ID card. It is recommended to complete your profile for a more detailed card.</p>
-              <button 
-                onClick={handleDownloadIdCard}
-                className="px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-300" 
-                disabled={isDownloading}>
-                {isDownloading ? 'Generating...' : 'Download ID Card (PDF)'}
-              </button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <button 
+                    onClick={handleDownloadIdCard}
+                    className="px-8 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400" 
+                    disabled={isDownloading}>
+                    {isDownloading ? 'Generating...' : 'Download ID Card (PDF)'}
+                  </button>
+                  <button 
+                    onClick={handleDownloadIdCardJpg}
+                    className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400" 
+                    disabled={isDownloading}>
+                    {isDownloading ? 'Generating...' : 'Download ID Card (JPG)'}
+                  </button>
+              </div>
             </div>
         </div>
 
