@@ -13,11 +13,27 @@ const IDCard: React.FC<IDCardProps> = ({ user, logoUrl }) => {
   return (
     <div
       id="id-card-capture"
-      className="relative w-[324px] h-[204px] bg-white border border-gray-300 rounded-lg shadow-lg p-2 flex flex-col overflow-hidden font-sans text-[8pt] text-black"
-      style={{ lineHeight: 1.1 }}
+      className="
+        relative 
+        w-[324px] 
+        h-[204px] 
+        bg-white 
+        border border-gray-300 
+        rounded-lg 
+        shadow-lg 
+        p-2 
+        flex flex-col 
+        overflow-hidden 
+        font-sans 
+        text-[8pt] 
+        text-black
+      "
+      style={{
+        lineHeight: 1.1,
+      }}
     >
       {/* Header */}
-      <header className="flex items-center border-b-2 border-orange-500 pb-1">
+      <header className="flex items-center border-b-2 border-orange-500 pb-1 shrink-0">
         <img src={logoUrl} alt="Logo" className="h-8 w-auto shrink-0" />
         <div className="ml-2 min-w-0">
           <h1 className="text-[12pt] font-bold text-amber-900 leading-none break-words">
@@ -39,11 +55,9 @@ const IDCard: React.FC<IDCardProps> = ({ user, logoUrl }) => {
             className="w-[65px] h-[78px] object-cover border-2 border-orange-400 rounded-md"
           />
           <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=50x50&qzone=1&data=${encodeURIComponent(
-              qrData
-            )}`}
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&qzone=1&data=${encodeURIComponent(qrData)}`}
             alt="QR Code"
-            className="w-[45px] h-[45px]"
+            className="w-[50px] h-[50px]"
           />
         </div>
 
@@ -89,7 +103,6 @@ const IDCard: React.FC<IDCardProps> = ({ user, logoUrl }) => {
 
             <div className="overflow-hidden">
               <p className="text-gray-500 text-[6.5pt]">Address</p>
-              {/* NO LINE CLAMP → full auto height fit */}
               <p className="font-semibold break-words leading-tight">
                 {user.address || 'N/A'}
               </p>

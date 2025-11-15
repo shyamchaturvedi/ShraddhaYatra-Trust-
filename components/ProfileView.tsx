@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, ToastType } from '../types';
+import IDCard from './IDCard';
 import Spinner from './Spinner';
 import { uploadImage } from '../services/supabaseClient';
-import IDCard from './IDCard';
 
-// Add this for TypeScript to recognize libraries from script tags
 declare global {
   interface Window {
     html2canvas: any;
@@ -14,359 +13,291 @@ declare global {
 
 interface ProfileViewProps {
   user: User;
-  onUpdateUser: (userId: string, updatedData: Partial<User>) => Promise<void>;
+  onUpdateUser: (userId: string, updatedData: Partial<User>) => void;
   onChangePassword: (newPassword: string) => Promise<boolean>;
   logoUrl: string;
   addToast: (message: string, type: ToastType) => void;
 }
 
 const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onChangePassword, logoUrl, addToast }) => {
-  const [formData, setFormData] = useState<Partial<User>>({
-    name: user.name || '',
-    phone: user.phone || '',
-    dob: user.dob || '',
-    address: user.address || '',
-    blood_group: user.blood_group || '',
-    emergency_contact_name: user.emergency_contact_name || '',
-    emergency_contact_phone: user.emergency_contact_phone || '',
-    gov_id_type: user.gov_id_type || 'Aadhaar Card',
-    gov_id_number: user.gov_id_number || '',
-  });
-
-  const [passwords, setPasswords] = useState({ new: '', confirm: '' });
-  const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
-  
-  const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
-  const [govIdFile, setGovIdFile] = useState<File | null>(null);
-
-  const [profilePicPreview, setProfilePicPreview] = useState<string | null>(user.profile_image_url || null);
-  const [govIdPreview, setGovIdPreview] = useState<string | null>(user.gov_id_image_url || null);
-
-  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
-  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'govId') => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const previewUrl = URL.createObjectURL(file);
-      if (type === 'profile') {
-        setProfilePicFile(file);
-        setProfilePicPreview(previewUrl);
-      } else {
-        setGovIdFile(file);
-        setGovIdPreview(previewUrl);
-      }
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-  
-  const handleDetailsSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsDetailsLoading(true);
-
-    let updatedData = { ...formData };
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState<Partial<User>>({});
+    const [passwordData, setPasswordData] = useState({ newPassword: '', confirmPassword: '' });
     
-    // Upload profile picture if changed
-    if (profilePicFile) {
-        const { data, error } = await uploadImage(profilePicFile, user.id);
-        if (error) {
-            addToast('Profile picture upload failed. Please try again.', 'error');
-            setIsDetailsLoading(false);
+    const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+    const [profileImagePreview, setProfileImagePreview] = useState<string | null>(user.profile_image_url || null);
+    const [govIdFile, setGovIdFile] = useState<File | null>(null);
+    const [govIdPreview, setGovIdPreview] = useState<string | null>(user.gov_id_image_url || null);
+
+    const [isSaving, setIsSaving] = useState(false);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    useEffect(() => {
+        setFormData({
+            name: user.name,
+            phone: user.phone,
+            dob: user.dob ? new Date(user.dob).toISOString().split('T')[0] : '',
+            address: user.address,
+            blood_group: user.blood_group,
+            emergency_contact_name: user.emergency_contact_name,
+            emergency_contact_phone: user.emergency_contact_phone,
+            gov_id_type: user.gov_id_type,
+            gov_id_number: user.gov_id_number,
+        });
+        setProfileImagePreview(user.profile_image_url || null);
+        setGovIdPreview(user.gov_id_image_url || null);
+    }, [user, isEditing]);
+
+    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handlePasswordFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPasswordData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+    
+    const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setProfileImageFile(file);
+            setProfileImagePreview(URL.createObjectURL(file));
+        }
+    };
+    
+    const handleGovIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+         if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setGovIdFile(file);
+            setGovIdPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        const updatedData = { ...formData };
+        try {
+            if (profileImageFile) {
+                const { data, error } = await uploadImage(profileImageFile, user.id);
+                if (error) throw new Error("Profile image upload failed.");
+                updatedData.profile_image_url = data.publicUrl;
+            }
+            if (govIdFile) {
+                const { data, error } = await uploadImage(govIdFile, user.id);
+                if (error) throw new Error("Government ID upload failed.");
+                updatedData.gov_id_image_url = data.publicUrl;
+            }
+            onUpdateUser(user.id, updatedData);
+            setIsEditing(false);
+        } catch (error: any) {
+            addToast(error.message, 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+    
+    const handlePasswordSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            addToast("New passwords do not match.", "error"); return;
+        }
+        if(passwordData.newPassword.length < 6) {
+            addToast("Password must be at least 6 characters long.", "error"); return;
+        }
+        setIsChangingPassword(true);
+        const success = await onChangePassword(passwordData.newPassword);
+        if (success) setPasswordData({ newPassword: '', confirmPassword: '' });
+        setIsChangingPassword(false);
+    };
+
+    const handleDownloadIdCard = async () => {
+        setIsDownloading(true);
+
+        const cardElement = document.getElementById("id-card-capture");
+        if (!cardElement || !window.html2canvas || !window.jspdf) {
+            addToast("Download feature not ready. Please try again later.", "error");
+            setIsDownloading(false);
             return;
         }
-        updatedData.profile_image_url = data.publicUrl;
-    }
-    
-    // Upload government ID if changed
-    if (govIdFile) {
-        const { data, error } = await uploadImage(govIdFile, user.id);
-        if (error) {
-            addToast('Government ID upload failed. Please try again.', 'error');
-            setIsDetailsLoading(false);
-            return;
+
+        try {
+            const { jsPDF } = window.jspdf;
+
+            // --- High-Quality Rendering Logic ---
+            const CARD_WIDTH_IN = 3.375;  // Standard ID card width in inches (CR80 size)
+            const CARD_HEIGHT_IN = 2.125; // Standard ID card height in inches
+            const DPI = 300;              // Target DPI for print quality
+
+            // The card element is designed at 96 CSS pixels per inch (324px / 3.375in = 96).
+            // To render at 300 DPI, we need to scale the canvas capture accordingly.
+            const scale = DPI / 96;
+
+            const canvas = await window.html2canvas(cardElement, {
+                scale: scale,
+                useCORS: true,       // Required for external images (QR, profile pics)
+                backgroundColor: "#ffffff",
+            });
+
+            const imgData = canvas.toDataURL("image/png", 1.0);
+
+            // --- PDF Creation ---
+            // Create a PDF document with the exact dimensions of a standard ID card in landscape.
+            const pdf = new jsPDF({
+                orientation: "landscape",
+                unit: "in",
+                format: [CARD_WIDTH_IN, CARD_HEIGHT_IN]
+            });
+
+            // Add the captured image to the PDF, filling the entire page without margins.
+            pdf.addImage(
+                imgData,
+                "PNG",
+                0,
+                0,
+                CARD_WIDTH_IN,
+                CARD_HEIGHT_IN,
+                undefined, // alias
+                "FAST"     // compression
+            );
+
+            const memberId = `SYT-${String(user.id).substring(0, 8).toUpperCase()}`;
+            pdf.save(`Shraddha-Yatra-ID-Card-${memberId}.pdf`);
+
+        } catch (err: any) {
+            console.error("PDF generation error:", err);
+            addToast("An error occurred while generating the ID Card PDF.", "error");
+        } finally {
+            setIsDownloading(false);
         }
-        updatedData.gov_id_image_url = data.publicUrl;
-    }
+    };
 
-    await onUpdateUser(user.id, updatedData);
-    setIsDetailsLoading(false);
-  };
-
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordMessage({type: '', text: ''});
-    setIsPasswordLoading(true);
-
-    if (passwords.new.length < 6) {
-        setPasswordMessage({type: 'error', text: 'New password must be at least 6 characters long.'});
-        setIsPasswordLoading(false);
-        return;
-    }
-    if (passwords.new !== passwords.confirm) {
-      setPasswordMessage({type: 'error', text: 'New passwords do not match.'});
-      setIsPasswordLoading(false);
-      return;
-    }
-    const success = await onChangePassword(passwords.new);
-    if (success) {
-        setPasswords({ new: '', confirm: '' });
-        setPasswordMessage({type: 'success', text: 'Password updated successfully!'});
-    } else {
-        setPasswordMessage({type: 'error', text: 'Failed to update password.'});
-    }
-    setIsPasswordLoading(false);
-  };
-
-  const handleDownloadIdCard = async () => {
-    setIsDownloading(true);
+    const renderDisplayInfo = () => (
+      <div className="space-y-4">
+        <InfoItem label="Full Name" value={user.name} />
+        <InfoItem label="Phone Number" value={user.phone} />
+        <InfoItem label="Date of Birth" value={user.dob ? new Date(user.dob).toLocaleDateString('en-GB') : 'N/A'} />
+        <InfoItem label="Blood Group" value={user.blood_group} />
+        <InfoItem label="Address" value={user.address} />
+        <InfoItem label="Emergency Contact" value={`${user.emergency_contact_name || 'N/A'} (${user.emergency_contact_phone || 'N/A'})`} />
+        <InfoItem label="Government ID" value={`${user.gov_id_type || 'N/A'} - ${user.gov_id_number || 'N/A'}`} />
+      </div>
+    );
     
-    const cardElement = document.getElementById('id-card-capture');
-    if (!cardElement || typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-        addToast("Download feature is currently unavailable. Please try again later.", "error");
-        setIsDownloading(false);
-        return;
-    }
-
-    // Define target dimensions for a crisp, high-resolution capture (300 DPI)
-    // Standard credit card dimensions: 85.6mm x 53.98mm
-    // Conversion: 1 inch = 25.4 mm
-    const cardWidthInches = 85.6 / 25.4;
-    const cardHeightInches = 53.98 / 25.4;
-    const dpi = 300;
-    const canvasWidth = Math.floor(cardWidthInches * dpi);
-    const canvasHeight = Math.floor(cardHeightInches * dpi);
-
-    try {
-        const canvas = await window.html2canvas(cardElement, {
-            width: canvasWidth,
-            height: canvasHeight,
-            scale: 1, // Scale is now controlled by explicit width/height for consistency
-            useCORS: true,
-            backgroundColor: '#ffffff', // Use a solid background to avoid transparency issues on some PDF viewers
-        });
-
-        const imgData = canvas.toDataURL('image/png', 1.0); // Use max quality PNG
-        
-        // Create a standard A4 PDF (210mm x 297mm)
-        const pdf = new window.jspdf.jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
-
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        
-        // Use the standard credit card dimensions for placing in the PDF
-        const cardWidthMM = 85.6;
-        const cardHeightMM = 53.98;
-
-        // Center the card on the page
-        const x = (pdfWidth - cardWidthMM) / 2;
-        const y = 30; // 30mm from the top
-
-        // Add the card image
-        pdf.addImage(imgData, 'PNG', x, y, cardWidthMM, cardHeightMM);
-
-        pdf.save(`Shraddha-Yatra-ID-Card-${user.name}.pdf`);
-    } catch (err: any) {
-        console.error("Error generating ID card PDF:", err);
-        addToast(`An error occurred while generating the ID card: ${err.message || 'Unknown error'}.`, 'error');
-    } finally {
-        setIsDownloading(false);
-    }
-  };
-
-  const handleDownloadIdCardJpg = async () => {
-    setIsDownloading(true);
-    
-    const cardElement = document.getElementById('id-card-capture');
-    if (!cardElement || typeof window.html2canvas === 'undefined') {
-        addToast("Download feature is currently unavailable. Please try again later.", "error");
-        setIsDownloading(false);
-        return;
-    }
-
-    // Use the same high-DPI settings for a quality image
-    const cardWidthInches = 85.6 / 25.4;
-    const cardHeightInches = 53.98 / 25.4;
-    const dpi = 300;
-    const canvasWidth = Math.floor(cardWidthInches * dpi);
-    const canvasHeight = Math.floor(cardHeightInches * dpi);
-
-    try {
-        const canvas = await window.html2canvas(cardElement, {
-            width: canvasWidth,
-            height: canvasHeight,
-            scale: 1,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-        });
-
-        const image = canvas.toDataURL('image/jpeg', 0.95); // High quality JPG
-        const link = document.createElement('a');
-        link.href = image;
-        link.download = `Shraddha-Yatra-ID-Card-${user.name}.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    } catch (err: any) {
-        console.error("Error generating ID card JPG:", err);
-        addToast(`An error occurred while generating the ID card: ${err.message || 'Unknown error'}.`, 'error');
-    } finally {
-        setIsDownloading(false);
-    }
-  };
-
-
-  return (
-    <>
-      <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8">
-        <div className="text-center">
-            <h2 className="text-3xl font-bold text-amber-900">My Devotee Profile</h2>
-            <p className="text-gray-600 mt-1">Keep your information updated for a seamless yatra experience.</p>
+    const renderEditForm = () => (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormInput name="name" label="Full Name" value={formData.name || ''} onChange={handleFormChange} />
+            <FormInput name="phone" label="Phone" value={formData.phone || ''} onChange={handleFormChange} disabled />
+            <FormInput name="dob" label="Date of Birth" type="date" value={formData.dob || ''} onChange={handleFormChange} />
+            <FormSelect name="blood_group" label="Blood Group" value={formData.blood_group || ''} onChange={handleFormChange} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} />
+            <div className="md:col-span-2">
+                <FormTextarea name="address" label="Address" value={formData.address || ''} onChange={handleFormChange} />
+            </div>
+            <FormInput name="emergency_contact_name" label="Emergency Contact Name" value={formData.emergency_contact_name || ''} onChange={handleFormChange} />
+            <FormInput name="emergency_contact_phone" label="Emergency Contact Phone" value={formData.emergency_contact_phone || ''} onChange={handleFormChange} />
+            <FormInput name="gov_id_type" label="Government ID Type" value={formData.gov_id_type || ''} onChange={handleFormChange} />
+            <FormInput name="gov_id_number" label="Government ID Number" value={formData.gov_id_number || ''} onChange={handleFormChange} />
         </div>
-        
-        {/* Update Details Form */}
-        <form onSubmit={handleDetailsSubmit} className="bg-white p-6 md:p-8 rounded-lg shadow-md space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Personal Details */}
-            <div className="md:col-span-2 space-y-4">
-              <h3 className="text-xl font-semibold text-orange-700 border-b pb-2">Personal Details</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Mobile Number</label>
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} pattern="[0-9]{10}" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
-                </div>
-                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
-                  <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Blood Group</label>
-                  <input type="text" name="blood_group" placeholder="e.g. O+" value={formData.blood_group} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
-                </div>
-              </div>
-               <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Address</label>
-                  <textarea name="address" value={formData.address} onChange={handleChange} rows={2} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"></textarea>
-                </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+            <ImageUploadField label="Profile Photo" preview={profileImagePreview} onChange={handleProfileImageChange} />
+            <ImageUploadField label="Government ID Photo" preview={govIdPreview} onChange={handleGovIdChange} />
+        </div>
+        <div className="flex justify-end gap-4 mt-6">
+            <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 bg-gray-200 rounded-md">Cancel</button>
+            <button type="submit" disabled={isSaving} className="px-4 py-2 bg-orange-600 text-white rounded-md flex items-center disabled:opacity-50">
+                {isSaving ? <><Spinner/> Saving...</> : 'Save Changes'}
+            </button>
+        </div>
+      </form>
+    );
 
-            {/* Profile Picture */}
-            <div className="flex flex-col items-center justify-center space-y-2">
-                <img src={profilePicPreview || 'https://via.placeholder.com/150'} alt="Profile Preview" className="w-32 h-32 object-cover rounded-full border-4 border-amber-200 shadow-sm" />
-                <label htmlFor="profile-pic-upload" className="cursor-pointer text-sm text-orange-600 hover:underline">Change Photo</label>
-                <input id="profile-pic-upload" type="file" onChange={(e) => handleFileChange(e, 'profile')} accept="image/*" className="hidden" />
-            </div>
-          </div>
-          
-           {/* Emergency Contact */}
-          <div className="space-y-4 pt-4 border-t">
-              <h3 className="text-xl font-semibold text-orange-700">Emergency Contact</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Contact Name</label>
-                    <input type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Contact Phone</label>
-                    <input type="tel" name="emergency_contact_phone" value={formData.emergency_contact_phone} onChange={handleChange} pattern="[0-9]{10}" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
-                </div>
-              </div>
-          </div>
+    return (
+        <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+            <h2 className="text-3xl font-bold text-amber-900 text-center">My Profile</h2>
 
-          {/* Government ID */}
-          <div className="space-y-4 pt-4 border-t">
-              <h3 className="text-xl font-semibold text-orange-700">Government ID</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">ID Type</label>
-                    <select name="gov_id_type" value={formData.gov_id_type} onChange={handleChange} className="mt-1 block w-full border bg-white border-gray-300 rounded-md shadow-sm p-2">
-                        <option>Aadhaar Card</option>
-                        <option>Voter ID Card</option>
-                        <option>Passport</option>
-                        <option>Driving License</option>
-                    </select>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-1 space-y-6 flex flex-col items-center">
+                    <h3 className="text-2xl font-semibold text-orange-700">Devotee ID Card</h3>
+                    <div className="p-2 bg-gray-100 rounded-lg inline-block">
+                        <IDCard user={user} logoUrl={logoUrl} />
+                    </div>
+                    <button onClick={handleDownloadIdCard} disabled={isDownloading} className="w-full max-w-xs flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
+                        {isDownloading ? <Spinner/> : (
+                            <>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 9.707a1 1 0 011.414 0L9 11.001V3a1 1 0 112 0v8.001l1.293-1.294a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                Download ID Card (PDF)
+                            </>
+                        )}
+                    </button>
                 </div>
-                 <div>
-                    <label className="block text-sm font-medium text-gray-700">ID Number</label>
-                    <input type="text" name="gov_id_number" value={formData.gov_id_number} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+                
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-white p-6 rounded-lg shadow-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-2xl font-semibold text-orange-700">Personal Details</h3>
+                            {!isEditing && <button onClick={() => setIsEditing(true)} className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600">Edit Profile</button>}
+                        </div>
+                        {isEditing ? renderEditForm() : renderDisplayInfo()}
+                    </div>
+                     <div className="bg-white p-6 rounded-lg shadow-md">
+                        <h3 className="text-2xl font-semibold text-orange-700 mb-4">Change Password</h3>
+                        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                            <FormInput type="password" name="newPassword" label="New Password" value={passwordData.newPassword} onChange={handlePasswordFormChange} />
+                            <FormInput type="password" name="confirmPassword" label="Confirm New Password" value={passwordData.confirmPassword} onChange={handlePasswordFormChange} />
+                             <div className="text-right">
+                                <button type="submit" disabled={isChangingPassword} className="px-4 py-2 bg-orange-600 text-white rounded-md flex items-center disabled:opacity-50">
+                                    {isChangingPassword ? <><Spinner/> Changing...</> : 'Change Password'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <div className="flex flex-col items-center">
-                    <a href={govIdPreview || '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                        {govIdPreview ? <img src={govIdPreview} alt="ID Preview" className="h-16 w-auto border rounded" /> : 'No ID uploaded'}
-                    </a>
-                    <label htmlFor="gov-id-upload" className="cursor-pointer text-sm text-orange-600 hover:underline mt-1">Upload ID Image</label>
-                    <input id="gov-id-upload" type="file" onChange={(e) => handleFileChange(e, 'govId')} accept="image/*" className="hidden" />
-                </div>
-              </div>
-          </div>
-          
-          <div className="text-right">
-              <button type="submit" className="px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-orange-300 flex items-center justify-center min-w-[120px]" disabled={isDetailsLoading}>
-                  {isDetailsLoading ? <Spinner/> : 'Save Details'}
-              </button>
-          </div>
-        </form>
-
-        {/* ID Card Section */}
-        <div className="bg-white p-6 md:p-8 rounded-lg shadow-md text-center">
-            <h3 className="text-2xl font-semibold text-orange-700 mb-4">Your Devotee ID Card</h3>
-            <div>
-              <p className="text-gray-600 mb-4">You can download your official ID card. It is recommended to complete your profile for a more detailed card.</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <button 
-                    onClick={handleDownloadIdCard}
-                    className="px-8 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400" 
-                    disabled={isDownloading}>
-                    {isDownloading ? 'Generating...' : 'Download ID Card (PDF)'}
-                  </button>
-                  <button 
-                    onClick={handleDownloadIdCardJpg}
-                    className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400" 
-                    disabled={isDownloading}>
-                    {isDownloading ? 'Generating...' : 'Download ID Card (JPG)'}
-                  </button>
-              </div>
             </div>
         </div>
-
-        {/* Change Password Form */}
-        <form onSubmit={handlePasswordSubmit} className="bg-white p-6 md:p-8 rounded-lg shadow-md">
-          <h3 className="text-2xl font-semibold text-orange-700 mb-4">Change Password</h3>
-          <div className="space-y-4">
-               <div>
-                  <label className="block text-sm font-medium text-gray-700">New Password</label>
-                  <input type="password" name="new" value={passwords.new} onChange={(e) => setPasswords(p => ({...p, new: e.target.value}))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required disabled={isPasswordLoading}/>
-              </div>
-              <div>
-                  <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
-                  <input type="password" name="confirm" value={passwords.confirm} onChange={(e) => setPasswords(p => ({...p, confirm: e.target.value}))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required disabled={isPasswordLoading}/>
-              </div>
-               {passwordMessage.text && <p className={`text-sm ${passwordMessage.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{passwordMessage.text}</p>}
-              <div className="text-right">
-                  <button type="submit" className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-300 flex items-center justify-center min-w-[170px]" disabled={isPasswordLoading}>
-                      {isPasswordLoading ? <Spinner /> : 'Change Password'}
-                  </button>
-              </div>
-          </div>
-        </form>
-      </div>
-
-      {/* Hidden container for rendering the ID card for capture */}
-      <div className="absolute -left-[9999px] top-0">
-          <IDCard user={user} logoUrl={logoUrl} />
-      </div>
-    </>
-  );
+    );
 };
+
+// Helper components for ProfileView
+const InfoItem: React.FC<{ label: string; value?: string }> = ({ label, value }) => (
+    <div>
+        <p className="text-sm font-medium text-gray-500">{label}</p>
+        <p className="text-lg text-gray-800">{value || 'Not set'}</p>
+    </div>
+);
+
+const FormInput: React.FC<any> = ({ label, ...props }) => (
+    <div>
+        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <input {...props} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+    </div>
+);
+
+const FormTextarea: React.FC<any> = ({ label, ...props }) => (
+    <div>
+        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <textarea {...props} rows={3} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+    </div>
+);
+
+const FormSelect: React.FC<any> = ({ label, options, ...props }) => (
+     <div>
+        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <select {...props} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white">
+            <option value="">Select...</option>
+            {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+    </div>
+);
+
+const ImageUploadField: React.FC<{label: string, preview: string | null, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void}> = ({label, preview, onChange}) => (
+    <div>
+        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <div className="mt-1 flex items-center gap-4">
+            <img src={preview || 'https://via.placeholder.com/150'} alt="Preview" className="w-24 h-24 object-cover rounded-md border" />
+            <input type="file" onChange={onChange} accept="image/*" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"/>
+        </div>
+    </div>
+);
 
 export default ProfileView;
